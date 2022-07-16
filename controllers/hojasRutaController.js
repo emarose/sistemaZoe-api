@@ -1,8 +1,7 @@
-const eventsModel = require("../models/eventsModels");
-const purchaseOrdersModel = require("../models/purchaseOrdersModels");
+const hojasRutaModel = require("../models/hojasRutaModel");
 
 module.exports = {
-  getAll: async function (req, res, next) {
+  /*  getAll: async function (req, res, next) {
     try {
       const events = await eventsModel.find();
 
@@ -11,7 +10,7 @@ module.exports = {
       next(e);
     }
   },
-  /* getByCode: async function (req, res, next) {
+   getByCode: async function (req, res, next) {
     try {
       console.log(req.params);
       const events = await eventsModel.find({ code: parseInt(req.params) });
@@ -20,7 +19,7 @@ module.exports = {
     } catch (e) {
       next(e);
     }
-  }, */
+  }, 
   getById: async function (req, res, next) {
     try {
       const events = await eventsModel.find({ _id: req.params.id });
@@ -58,29 +57,7 @@ module.exports = {
       next(e);
     }
   },
-  update: async function (req, res, next) {
-    try {
-      const doc = await eventsModel.findOne({ _id: req.params.id });
-      const update = { [req.body[0].searchField]: req.body[0].update };
-      await doc.updateOne(update);
 
-      res.json(doc);
-    } catch (e) {
-      console.log(e);
-    }
-    /* try {
-      console.log("REQ (Id):", req.params);
-
-      const update = await eventsModel.updateOne(
-        { _id: req.params.id },
-        { $push: req.body }
-      );
-      res.json(update);
-    } catch (e) {
-      console.log(e);
-      next(e);
-    } */
-  },
   unlink: async function (req, res, next) {
     try {
       console.log(req.body);
@@ -130,5 +107,5 @@ module.exports = {
       console.log(e);
       next(e);
     }
-  },
+  }, */
 };

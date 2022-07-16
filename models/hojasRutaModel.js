@@ -1,30 +1,30 @@
 var mongoose = require("mongoose");
 const errorMessage = require("../util/errorMessage");
 
-const suppliersSchema = mongoose.Schema({
-  code: {
+const hojasRutaSchema = mongoose.Schema({
+  cliente: {
+    type: String,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
+  planta: {
+    type: String,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
+  fecha: {
+    type: Date,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
+  cajas: {
     type: Number,
-    required: [true, errorMessage.GENERAL.campo_obligatorio],
-    min: 0,
+    default: 0,
   },
-  enterprise: {
-    type: String,
-    required: [true, errorMessage.GENERAL.campo_obligatorio],
-  },
-  address: {
-    type: String,
-    required: [true, errorMessage.GENERAL.campo_obligatorio],
-  },
-  contact: {
-    type: String,
-    required: [true, errorMessage.GENERAL.campo_obligatorio],
-  },
-  notes: {
-    type: String,
+  kgCongelado: {
+    type: Number,
+    default: 0,
   },
 });
 
-suppliersSchema.set("toJSON", { getters: true, virtuals: true });
+hojasRutaSchema.set("toJSON", { getters: true, virtuals: true });
 
 //Creacion modelo (Clase -> POO)
-module.exports = mongoose.model("suppliers", suppliersSchema);
+module.exports = mongoose.model("hojasRuta", hojasRutaSchema);

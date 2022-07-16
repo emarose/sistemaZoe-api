@@ -6,20 +6,17 @@ var bodyParser = require("body-parser");
 var logger = require("morgan");
 require("dotenv").config();
 
-var customersRouter = require("./routes/customers");
-var shippingRouter = require("./routes/shipping");
-var productsRouter = require("./routes/products");
-var categoriesRouter = require("./routes/categories");
-var saleModesRouter = require("./routes/saleModes");
-var payMethodsRouter = require("./routes/payMethods");
-var purchaseOrdersRouter = require("./routes/purchaseOrders");
-var reportsRouter = require("./routes/reports");
-var suppliersRouter = require("./routes/suppliers");
-var inputsRouter = require("./routes/inputs");
-var eventsRouter = require("./routes/events");
+var titularesRouter = require("./routes/titularesRoute");
+var vehiculosRouter = require("./routes/vehiculosRoute");
+var cuentasCorrientesRouter = require("./routes/cuentasCorrientesRoute");
+var movimientosRouter = require("./routes/movimientosRoute");
+var hojasRutaRouter = require("./routes/hojasRutaRoute");
+
 var app = express();
 var cors = require("cors");
 
+/* var baseUrl = process.env.baseURL || "http://localhost:3000";
+ */
 app.use(bodyParser.json());
 app.use(cors());
 
@@ -33,17 +30,11 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use("/customers", customersRouter);
-app.use("/shipping", shippingRouter);
-app.use("/suppliers", suppliersRouter);
-app.use("/products", productsRouter);
-app.use("/categories", categoriesRouter);
-app.use("/purchaseOrders", purchaseOrdersRouter);
-app.use("/saleModes", saleModesRouter);
-app.use("/payMethods", payMethodsRouter);
-app.use("/inputs", inputsRouter);
-app.use("/reports", reportsRouter);
-app.use("/events", eventsRouter);
+app.use("/titulares", titularesRouter);
+app.use("/vehiculos", vehiculosRouter);
+app.use("/cuentasCorrientes", cuentasCorrientesRouter);
+app.use("/movimientos", movimientosRouter);
+app.use("/hojasRuta", hojasRutaRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -61,7 +52,7 @@ app.use(function (err, req, res, next) {
   res.json({ error: true, message: err.message });
 });
 
-app.listen(process.env.PORT || 3001, () => {
+app.listen(/* process.env.PORT ||  */ 3000, () => {
   console.log("Express conectado");
 });
 

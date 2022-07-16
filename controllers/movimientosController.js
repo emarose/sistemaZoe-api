@@ -1,6 +1,7 @@
-const productsModel = require("../models/productsModels");
+const movimientosModel = require("../models/movimientosModel");
+
 module.exports = {
-  getAll: async function (req, res, next) {
+  /*  getAll: async function (req, res, next) {
     try {
       const products = await productsModel.find();
 
@@ -10,7 +11,7 @@ module.exports = {
     }
   },
   getById: async function (req, res, next) {
-    //console.log(req.params, req.params.id);
+   
     try {
       const documents = await productsModel.findById(req.params.id);
       res.json(documents);
@@ -19,7 +20,6 @@ module.exports = {
     }
   },
   create: async function (req, res, next) {
-    //console.log("req name:", req.body);
     try {
       const data = new productsModel({
         code: req.body.code,
@@ -69,5 +69,5 @@ module.exports = {
       console.log(e);
       next(e);
     }
-  },
+  }, */
 };

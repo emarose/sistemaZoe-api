@@ -1,15 +1,36 @@
-const customersModel = require("../models/customersModel");
+const titularesModel = require("../models/titularesModel");
 
 module.exports = {
+  create: async function (req, res, next) {
+    console.log(req.body);
+
+    try {
+      const document = new titularesModel({
+        codigo: req.body.codigo,
+        alias: req.body.alias,
+        ciudad: req.body.ciudad,
+        precioCongelado: parseInt(req.body.precioCongelado),
+        precioFresco: parseInt(req.body.precioFresco),
+      });
+
+      const response = await document.save();
+
+      res.json(response);
+    } catch (e) {
+      console.log(e);
+      next(e);
+    }
+  },
   getAll: async function (req, res, next) {
     try {
-      const customers = await customersModel.find();
-      //console.log(customers);
-      res.json(customers);
+      const document = await titularesModel.find();
+      console.log(document);
+      res.json(document);
     } catch (e) {
       next(e);
     }
   },
+  /* 
   getByName: async function (req, res, next) {
     try {
       const customer = await customersModel.find({ name: req.params.name });
@@ -64,5 +85,5 @@ module.exports = {
       console.log(e);
       next(e);
     }
-  },
+  }, */
 };
