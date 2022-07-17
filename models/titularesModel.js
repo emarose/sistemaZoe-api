@@ -4,6 +4,7 @@ const errorMessage = require("../util/errorMessage");
 const titularesSchema = new mongoose.Schema({
   codigo: {
     type: String,
+    unique: true,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
   alias: {

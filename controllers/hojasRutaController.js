@@ -1,15 +1,45 @@
 const hojasRutaModel = require("../models/hojasRutaModel");
 
 module.exports = {
-  /*  getAll: async function (req, res, next) {
+  getAll: async function (req, res, next) {
     try {
-      const events = await eventsModel.find();
+      const document = await hojasRutaModel.find();
 
-      res.json(events);
+      res.json(document);
     } catch (e) {
       next(e);
     }
   },
+  create: async function (req, res, next) {
+    try {
+      const document = new eventsModel({
+        cliente: req.body.cliente,
+        planta: req.body.planta,
+        cajas: req.body.cajas,
+        kgCongelado: req.body.kgCongelado,
+        kgFresco: req.body.kgFresco,
+        vehiculo: req.body.vehiculo,
+      });
+
+      const response = await document.save();
+
+      res.json(response);
+    } catch (e) {
+      /*    res.status=400
+      e.status=400 */
+      next(e);
+    }
+  },
+  getByName: async function (req, res, next) {
+    console.log(req);
+    try {
+      const document = await titularesModel.find({ codigo: req.params.codigo });
+      console.log(document);
+      res.json(document);
+    } catch (e) {
+      next(e);
+    }
+  } /*
    getByCode: async function (req, res, next) {
     try {
       console.log(req.params);
@@ -29,26 +59,7 @@ module.exports = {
       next(e);
     }
   },
-  create: async function (req, res, next) {
-    try {
-      const document = new eventsModel({
-        code: req.body.code,
-        name: req.body.name,
-        date: req.body.date,
-        cost: req.body.cost,
-        notes: req.body.notes,
-        address: req.body.address,
-        orders: req.body.orders,
-      });
 
-      const response = await document.save();
-
-      res.json(response);
-    } catch (e) {
-      //e.status=200
-      next(e);
-    }
-  },
   delete: async function (req, res, next) {
     try {
       const deleted = await eventsModel.deleteOne({ _id: req.params.id });
@@ -107,5 +118,5 @@ module.exports = {
       console.log(e);
       next(e);
     }
-  }, */
+  }, */,
 };

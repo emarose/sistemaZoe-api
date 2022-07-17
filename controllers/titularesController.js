@@ -17,6 +17,7 @@ module.exports = {
 
       res.json(response);
     } catch (e) {
+      e.status = 400;
       console.log(e);
       next(e);
     }
@@ -30,16 +31,17 @@ module.exports = {
       next(e);
     }
   },
-  /* 
   getByName: async function (req, res, next) {
+    console.log(req.params);
     try {
-      const customer = await customersModel.find({ name: req.params.name });
-      console.log(customer);
-      res.json(customer);
+      const document = await titularesModel.find({ codigo: req.params.name });
+      console.log(document);
+      res.json(document);
     } catch (e) {
       next(e);
     }
   },
+  /* 
   create: async function (req, res, next) {
     try {
       const document = new customersModel({
