@@ -1,33 +1,19 @@
 const movimientosModel = require("../models/movimientosModel");
 
 module.exports = {
-  /*  getAll: async function (req, res, next) {
-    try {
-      const products = await productsModel.find();
-
-      res.json(products);
-    } catch (e) {
-      next(e);
-    }
-  },
-  getById: async function (req, res, next) {
-   
-    try {
-      const documents = await productsModel.findById(req.params.id);
-      res.json(documents);
-    } catch (e) {
-      next(e);
-    }
-  },
   create: async function (req, res, next) {
+    console.log(req.body);
     try {
-      const data = new productsModel({
-        code: req.body.code,
-        productName: req.body.productName,
-        category: req.body.category,
-        price: req.body.price,
-        cost: req.body.cost || 0,
-        details: req.body.details === " " ? "Sin detalles" : req.body.details,
+      const data = new movimientosModel({
+        cliente: req.body.cliente,
+        planta: req.body.planta,
+        vehiculo: req.body.vehiculo,
+        cajas: req.body.cajas,
+        kgCong: req.body.kgCong,
+        precioFresco: req.body.precioFresco,
+        precioCongelado: req.body.precioCongelado,
+        importe: req.body.importe,
+        fecha: req.body.initDate,
       });
       const document = await data.save();
 
@@ -38,6 +24,25 @@ module.exports = {
       next(e);
     }
   },
+  getAll: async function (req, res, next) {
+    try {
+      const movs = await movimientosModel.find();
+      res.json(movs);
+    } catch (e) {
+      next(e);
+    }
+  },
+  /*  
+  getById: async function (req, res, next) {
+   
+    try {
+      const documents = await productsModel.findById(req.params.id);
+      res.json(documents);
+    } catch (e) {
+      next(e);
+    }
+  },
+  
   update: async function (req, res, next) {
     console.log(req.body[0].searchField);
 

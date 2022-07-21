@@ -2,20 +2,64 @@ var mongoose = require("mongoose");
 const errorMessage = require("../util/errorMessage");
 
 const movimientosSchema = mongoose.Schema({
-  code: {
+  cliente: {
+    type: String,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
+  planta: {
+    type: String,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
+  vehiculo: {
+    type: String,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
+  cajas: {
+    type: Number,
+
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
+  kgCong: {
+    type: Number,
+
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
+  importe: {
     type: Number,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
-  cantidad: {
-    type: String,
+  fecha: {
+    type: Date,
+    default: new Date(),
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
-  category: {
-    type: String,
+  precioFresco: {
+    type: Number,
+    default: 0,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
+  precioCongelado: {
+    type: Number,
+    default: 0,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
 });
 
+movimientosSchema.virtual("precioCongelado_currency").get(function () {
+  let precioCongelado = this.precioCongelado.toFixed(2).replace(".", ",");
+  return `$ ${String(precioCongelado).replace(
+    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
+    "$1."
+  )}`;
+});
+
+movimientosSchema.virtual("precioFresco_currency").get(function () {
+  let precioFresco = this.precioFresco.toFixed(2).replace(".", ",");
+  return `$ ${String(precioFresco).replace(
+    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
+    "$1."
+  )}`;
+});
 movimientosSchema.set("toJSON", { getters: true, virtuals: true });
 
 module.exports = mongoose.model("movimientos", movimientosSchema);

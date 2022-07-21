@@ -24,6 +24,11 @@ const titularesSchema = new mongoose.Schema({
     min: 0,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
+  saldo: {
+    type: Number,
+    default: 0,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
 });
 
 titularesSchema.virtual("precioCongelado_currency").get(function () {
@@ -41,5 +46,14 @@ titularesSchema.virtual("precioFresco_currency").get(function () {
     "$1."
   )}`;
 });
+
+titularesSchema.virtual("saldo_currency").get(function () {
+  let saldo = this.saldo.toFixed(2).replace(".", ",");
+  return `$ ${String(saldo).replace(
+    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
+    "$1."
+  )}`;
+});
+
 titularesSchema.set("toJSON", { getters: true, virtuals: true });
 module.exports = mongoose.model("titulares", titularesSchema);

@@ -8,7 +8,6 @@ require("dotenv").config();
 
 var titularesRouter = require("./routes/titularesRoute");
 var vehiculosRouter = require("./routes/vehiculosRoute");
-var cuentasCorrientesRouter = require("./routes/cuentasCorrientesRoute");
 var movimientosRouter = require("./routes/movimientosRoute");
 var hojasRutaRouter = require("./routes/hojasRutaRoute");
 
@@ -32,7 +31,6 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/titulares", titularesRouter);
 app.use("/vehiculos", vehiculosRouter);
-app.use("/cuentasCorrientes", cuentasCorrientesRouter);
 app.use("/movimientos", movimientosRouter);
 app.use("/hojasRuta", hojasRutaRouter);
 

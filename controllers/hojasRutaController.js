@@ -31,7 +31,6 @@ module.exports = {
     }
   },
   getByName: async function (req, res, next) {
-    console.log(req);
     try {
       const document = await titularesModel.find({ codigo: req.params.codigo });
       console.log(document);

@@ -2,14 +2,13 @@ const titularesModel = require("../models/titularesModel");
 
 module.exports = {
   create: async function (req, res, next) {
-    console.log(req.body);
-
     try {
       const document = new titularesModel({
         codigo: req.body.codigo,
         alias: req.body.alias,
         ciudad: req.body.ciudad,
-        precioCongelado: parseInt(req.body.precioCongelado),
+        saldo: 0,
+        precioongelado: parseInt(req.body.precioCongelado),
         precioFresco: parseInt(req.body.precioFresco),
       });
 
@@ -25,7 +24,6 @@ module.exports = {
   getAll: async function (req, res, next) {
     try {
       const document = await titularesModel.find();
-      console.log(document);
       res.json(document);
     } catch (e) {
       next(e);
@@ -35,7 +33,6 @@ module.exports = {
     console.log(req.params);
     try {
       const document = await titularesModel.find({ codigo: req.params.name });
-      console.log(document);
       res.json(document);
     } catch (e) {
       next(e);
