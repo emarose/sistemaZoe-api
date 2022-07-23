@@ -7,9 +7,6 @@ const titularesSchema = new mongoose.Schema({
     unique: true,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
-  alias: {
-    type: String,
-  },
   ciudad: {
     type: String,
     required: [true, errorMessage.GENERAL.campo_obligatorio],

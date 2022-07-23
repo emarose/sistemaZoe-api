@@ -5,11 +5,10 @@ module.exports = {
     try {
       const document = new titularesModel({
         codigo: req.body.codigo,
-        alias: req.body.alias,
         ciudad: req.body.ciudad,
         saldo: 0,
-        precioongelado: parseInt(req.body.precioCongelado),
-        precioFresco: parseInt(req.body.precioFresco),
+        precioCongelado: req.body.precioCongelado,
+        precioFresco: req.body.precioFresco,
       });
 
       const response = await document.save();
@@ -33,6 +32,7 @@ module.exports = {
     console.log(req.params);
     try {
       const document = await titularesModel.find({ codigo: req.params.name });
+      console.log(document);
       res.json(document);
     } catch (e) {
       next(e);

@@ -16,21 +16,18 @@ const movimientosSchema = mongoose.Schema({
   },
   cajas: {
     type: Number,
-
-    required: [true, errorMessage.GENERAL.campo_obligatorio],
+    default: 0,
   },
   kgCong: {
     type: Number,
-
-    required: [true, errorMessage.GENERAL.campo_obligatorio],
+    default: 0,
   },
   importe: {
     type: Number,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
   fecha: {
-    type: Date,
-    default: new Date(),
+    type: String,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
   precioFresco: {

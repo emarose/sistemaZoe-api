@@ -1,4 +1,5 @@
 const movimientosModel = require("../models/movimientosModel");
+const formatDateString = require("../util/utils");
 
 module.exports = {
   create: async function (req, res, next) {
@@ -13,7 +14,7 @@ module.exports = {
         precioFresco: req.body.precioFresco,
         precioCongelado: req.body.precioCongelado,
         importe: req.body.importe,
-        fecha: req.body.initDate,
+        fecha: formatDateString(new Date(req.body.fecha)),
       });
       const document = await data.save();
 
@@ -32,6 +33,18 @@ module.exports = {
       next(e);
     }
   },
+  byDate: async function (req, res, next) {
+    /*  const fecha = req.body.fecha; */
+    const fecha = formatDateString(new Date(req.params.date));
+    try {
+      const documents = await movimientosModel.find({ fecha: fecha });
+      console.log(documents);
+      res.json(documents);
+    } catch (e) {
+      next(e);
+    }
+  },
+
   /*  
   getById: async function (req, res, next) {
    

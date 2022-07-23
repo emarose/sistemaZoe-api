@@ -6,8 +6,8 @@ module.exports = function formatNumberToCurrency(num) {
   )}`;
 };
 
-/* module.exports = function formatDateString(date) {
+module.exports = function formatDateString(date) {
   return `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1)
     .toString()
     .padStart(2, "0")}/${date.getFullYear()}`;
-}; */
+};
