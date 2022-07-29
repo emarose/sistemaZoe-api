@@ -1,9 +1,9 @@
 const movimientosModel = require("../models/movimientosModel");
 const formatDateString = require("../util/utils");
+const moment = require("moment");
 
 module.exports = {
   create: async function (req, res, next) {
-    console.log(req.body);
     try {
       const data = new movimientosModel({
         cliente: req.body.cliente,
@@ -14,7 +14,7 @@ module.exports = {
         precioFresco: req.body.precioFresco,
         precioCongelado: req.body.precioCongelado,
         importe: req.body.importe,
-        fecha: formatDateString(new Date(req.body.fecha)),
+        fecha: new Date(req.body.fecha),
       });
       const document = await data.save();
 
@@ -34,12 +34,28 @@ module.exports = {
     }
   },
   byDate: async function (req, res, next) {
-    /*  const fecha = req.body.fecha; */
-    const fecha = formatDateString(new Date(req.params.date));
+    const date = new Date(req.body.fecha);
+    console.log("FECHA:", date);
     try {
-      const documents = await movimientosModel.find({ fecha: fecha });
+      const documents = await movimientosModel.find({
+        fecha: {
+          $lte: date,
+        },
+      });
       console.log(documents);
       res.json(documents);
+    } catch (e) {
+      next(e);
+    }
+  },
+  getByName: async function (req, res, next) {
+    try {
+      const documents = await movimientosModel.find({
+        cliente: req.params.name,
+      });
+      res.json(documents);
+
+      /*  console.log(documents); */
     } catch (e) {
       next(e);
     }

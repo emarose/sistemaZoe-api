@@ -2,25 +2,29 @@ var mongoose = require("mongoose");
 const errorMessage = require("../util/errorMessage");
 
 const hojasRutaSchema = mongoose.Schema({
-  cliente: {
-    type: String,
+  movimientos: {
+    type: Array,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
-  planta: {
-    type: String,
+  importeTotal: {
+    type: Number,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
   fecha: {
     type: Date,
+    default: Date.now,
+    unique: true,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
-  cajas: {
+  cajasTotal: {
     type: Number,
     default: 0,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
-  kgCongelado: {
+  kgTotal: {
     type: Number,
     default: 0,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
 });
 

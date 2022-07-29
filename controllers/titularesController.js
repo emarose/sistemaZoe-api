@@ -4,9 +4,9 @@ module.exports = {
   create: async function (req, res, next) {
     try {
       const document = new titularesModel({
+        saldo: 0,
         codigo: req.body.codigo,
         ciudad: req.body.ciudad,
-        saldo: 0,
         precioCongelado: req.body.precioCongelado,
         precioFresco: req.body.precioFresco,
       });
@@ -29,7 +29,7 @@ module.exports = {
     }
   },
   getByName: async function (req, res, next) {
-    console.log(req.params);
+    console.log("getByName: ", req.params);
     try {
       const document = await titularesModel.find({ codigo: req.params.name });
       console.log(document);

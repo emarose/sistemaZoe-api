@@ -1,25 +1,31 @@
-const hojasRutaModel = require("../models/hojasRutaModel");
-const formatDateString = require("../util/utils");
+const pagosModel = require("../models/pagosModel");
 
 module.exports = {
   getAll: async function (req, res, next) {
     try {
-      const document = await hojasRutaModel.find();
+      const document = await pagosModel.find();
 
       res.json(document);
     } catch (e) {
       next(e);
     }
   },
-  create: async function (req, res, next) {
-    console.log(req.body);
+  getByCliente: async function (req, res, next) {
     try {
-      const document = new hojasRutaModel({
-        movimientos: req.body.movimientos,
-        fecha: formatDateString(new Date(req.body.fecha)),
-        importeTotal: req.body.importeTotal,
-        cajasTotal: req.body.cajasTotal,
-        kgTotal: req.body.kgTotal,
+      const document = await pagosModel.find({ cliente: req.params.cliente });
+      res.json(document);
+    } catch (e) {
+      next(e);
+    }
+  },
+  create: async function (req, res, next) {
+    try {
+      const document = new pagosModel({
+        monto: req.body.monto,
+        concepto: req.body.concepto,
+        fecha: req.body.fecha,
+        cuentaCorriente_id: req.body.cuentaCorriente_id,
+        cliente: req.body.codigo,
       });
 
       const response = await document.save();
@@ -31,7 +37,7 @@ module.exports = {
       next(e);
     }
   },
-  getByName: async function (req, res, next) {
+  /*   getByName: async function (req, res, next) {
     try {
       const document = await titularesModel.find({ codigo: req.params.codigo });
       console.log(document);
@@ -39,7 +45,7 @@ module.exports = {
     } catch (e) {
       next(e);
     }
-  } /*
+  } 
    getByCode: async function (req, res, next) {
     try {
       console.log(req.params);
@@ -118,5 +124,5 @@ module.exports = {
       console.log(e);
       next(e);
     }
-  }, */,
+  }, */
 };

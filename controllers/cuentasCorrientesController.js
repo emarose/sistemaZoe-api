@@ -1,10 +1,9 @@
-const hojasRutaModel = require("../models/hojasRutaModel");
-const formatDateString = require("../util/utils");
+const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
 
 module.exports = {
   getAll: async function (req, res, next) {
     try {
-      const document = await hojasRutaModel.find();
+      const document = await cuentasCorrientesModel.find();
 
       res.json(document);
     } catch (e) {
@@ -12,18 +11,15 @@ module.exports = {
     }
   },
   create: async function (req, res, next) {
-    console.log(req.body);
     try {
-      const document = new hojasRutaModel({
-        movimientos: req.body.movimientos,
-        fecha: formatDateString(new Date(req.body.fecha)),
-        importeTotal: req.body.importeTotal,
-        cajasTotal: req.body.cajasTotal,
-        kgTotal: req.body.kgTotal,
+      const document = new cuentasCorrientesModel({
+        titular_id: req.params.id,
+        debe: 0,
+        haber: 0,
       });
 
       const response = await document.save();
-
+      /*      console.log(response); */
       res.json(response);
     } catch (e) {
       /*    res.status=400
@@ -31,11 +27,46 @@ module.exports = {
       next(e);
     }
   },
-  getByName: async function (req, res, next) {
+  getById: async function (req, res, next) {
+    const titular_id = req.params.id;
     try {
-      const document = await titularesModel.find({ codigo: req.params.codigo });
+      const document = await cuentasCorrientesModel.find({
+        titular_id: titular_id,
+      });
+      /*       console.log(document); */
+      res.json(document[0]);
+    } catch (e) {
+      next(e);
+    }
+  },
+
+  agregarAlHaber: async function (req, res, next) {
+    const cuentaCorriente_id = req.body.cuentaCorriente_id;
+    let monto = parseInt(req.body.monto);
+
+    try {
+      const document = await cuentasCorrientesModel.updateOne(
+        { _id: cuentaCorriente_id },
+        { $inc: { haber: monto } }
+      );
       console.log(document);
-      res.json(document);
+      res.json(`Agregados ${monto} al haber.`);
+    } catch (e) {
+      next(e);
+    }
+  },
+  agregarAlDebe: async function (req, res, next) {
+    console.log("AGREGAR AL DEBE:", req.body);
+    const cuentaCorriente_id = req.body.cuentaCorriente_id;
+    let monto = parseInt(req.body.monto);
+
+    try {
+      const document = await cuentasCorrientesModel.updateOne(
+        { _id: cuentaCorriente_id },
+        { $inc: { debe: monto } }
+      );
+      console.log(document);
+      res.json(`Agregados ${monto} al debe.`);
     } catch (e) {
       next(e);
     }

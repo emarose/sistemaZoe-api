@@ -21,10 +21,9 @@ const titularesSchema = new mongoose.Schema({
     min: 0,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
-  saldo: {
-    type: Number,
-    default: 0,
-    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  cuentasCorrientes_id: {
+    type: mongoose.Schema.ObjectId,
+    ref: "cuentasCorrientes",
   },
 });
 
@@ -39,14 +38,6 @@ titularesSchema.virtual("precioCongelado_currency").get(function () {
 titularesSchema.virtual("precioFresco_currency").get(function () {
   let precioFresco = this.precioFresco.toFixed(2).replace(".", ",");
   return `$ ${String(precioFresco).replace(
-    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
-    "$1."
-  )}`;
-});
-
-titularesSchema.virtual("saldo_currency").get(function () {
-  let saldo = this.saldo.toFixed(2).replace(".", ",");
-  return `$ ${String(saldo).replace(
     /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
     "$1."
   )}`;

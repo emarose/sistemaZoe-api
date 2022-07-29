@@ -4,14 +4,20 @@ const errorMessage = require("../util/errorMessage");
 const movimientosSchema = mongoose.Schema({
   cliente: {
     type: String,
+    lowercase: true,
+    trim: true,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
   planta: {
     type: String,
+    lowercase: true,
+    trim: true,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
   vehiculo: {
     type: String,
+    lowercase: true,
+    trim: true,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
   cajas: {
@@ -27,7 +33,7 @@ const movimientosSchema = mongoose.Schema({
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
   fecha: {
-    type: String,
+    type: Date,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
   precioFresco: {
@@ -53,6 +59,13 @@ movimientosSchema.virtual("precioCongelado_currency").get(function () {
 movimientosSchema.virtual("precioFresco_currency").get(function () {
   let precioFresco = this.precioFresco.toFixed(2).replace(".", ",");
   return `$ ${String(precioFresco).replace(
+    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
+    "$1."
+  )}`;
+});
+movimientosSchema.virtual("importe_currency").get(function () {
+  let importe = this.importe.toFixed(2).replace(".", ",");
+  return `$ ${String(importe).replace(
     /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
     "$1."
   )}`;
