@@ -95,7 +95,7 @@ module.exports = {
             concepto: pagosMovimientos[i].concepto,
             importe: "­", //DEBE
             monto: formatNumberToCurrency(pagosMovimientos[i].monto), //HABER
-            saldo: pagosMovimientos[i].saldo_anterior_currency,
+            saldo: pagosMovimientos[i].saldo_actual_currency,
           };
           calcPagos = calcPagos + pagosMovimientos[i].monto;
         } else {
@@ -111,7 +111,7 @@ module.exports = {
             totalKg: pagosMovimientos[i].saldo_anterior_currency,
             importe: formatNumberToCurrency(pagosMovimientos[i].importe), //DEBE
             monto: "-", //HABER
-            saldo: pagosMovimientos[i].saldo_anterior_currency,
+            saldo: pagosMovimientos[i].saldo_actual_currency,
           };
           calcImportes = calcImportes + pagosMovimientos[i].importe;
           totalCajas = totalCajas + pagosMovimientos[i].cajas;
@@ -194,7 +194,7 @@ module.exports = {
             label: "Saldo",
             property: "saldo",
             valign: "center",
-            align: "center",
+            align: "right",
             width: 100,
           },
         ],
@@ -250,7 +250,11 @@ module.exports = {
         x: 0, // {Number} default: undefined | doc.x
         rowSpacing: 10,
         colSpacing: 10,
-
+        minRowHeight: 20,
+        divider: {
+          header: { disabled: false, width: 1, opacity: 1 },
+          horizontal: { disabled: false, width: 0.5, opacity: 0.5 },
+        },
         // functions
         prepareHeader: () => doc.font("Courier-Bold").fontSize(10), // {Function}
         prepareRow: (row, i) => doc.font("Courier").fontSize(10), // {Function}
@@ -622,6 +626,7 @@ module.exports = {
       let totalCajas = 0;
       let totalKgCong = 0;
       let calc = 0;
+
       for (let i = 0; i < findMovementsById.length; i++) {
         data = {
           fecha: moment(findMovementsById[i].fecha).format("DD/MM/YYYY"),
@@ -712,8 +717,8 @@ module.exports = {
           {
             label: "Importe",
             property: "importe",
-            valign: "center",
-            align: "center",
+            valign: "right",
+            align: "right",
           },
         ],
         datas: arr,
@@ -764,8 +769,7 @@ module.exports = {
       }; */
 
       const options = {
-        rowSpacing: 10,
-        colSpacing: 10,
+        minRowHeight: 15,
 
         // functions
         prepareHeader: () => doc.font("Courier-Bold").fontSize(10),

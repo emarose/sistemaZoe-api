@@ -87,6 +87,13 @@ movimientosSchema.virtual("saldo_anterior_currency").get(function () {
   )}`;
 });
 
+movimientosSchema.virtual("saldo_actual_currency").get(function () {
+  let saldo_actual = this.saldo_actual.toFixed(2).replace(".", ",");
+  return `$ ${String(saldo_actual).replace(
+    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
+    "$1."
+  )}`;
+});
 movimientosSchema.set("toJSON", { getters: true, virtuals: true });
 
 module.exports = mongoose.model("movimientos", movimientosSchema);

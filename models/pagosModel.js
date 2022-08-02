@@ -52,7 +52,13 @@ pagosSchema.virtual("saldo_anterior_currency").get(function () {
     "$1."
   )}`;
 });
-
+pagosSchema.virtual("saldo_actual_currency").get(function () {
+  let saldo_actual = this.saldo_actual.toFixed(2).replace(".", ",");
+  return `$ ${String(saldo_actual).replace(
+    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
+    "$1."
+  )}`;
+});
 pagosSchema.set("toJSON", { getters: true, virtuals: true });
 
 //Creacion modelo (Clase -> POO)
