@@ -322,7 +322,19 @@ module.exports = {
         })
         .sort({ cliente: -1 });
       /*  console.log("Movimientos:", findMovements); */
-
+      let asd = movimientosModel.aggregate([
+        {
+          $group: {
+            _id: {
+              cliente: "$cliente",
+            },
+            codigo: {
+              $addToSet: "$codigo",
+            },
+          },
+        },
+      ]);
+      console.log(asd);
       const findPagos = await pagosModel
         .find({
           fecha: {
@@ -336,12 +348,8 @@ module.exports = {
       const findCC = await cuentasCorrientesModel.find({});
       /*       console.log("Cuenta Corriente:", findCC);
        */
-      const findTitulares = await titularesModel.find({});
 
-      for (let i = 0; i < findTitulares.length; i++) {
-        if ((findTitulares[i]._id, "===", findCC[i].titular_id))
-          console.log("asd");
-      }
+      ///// ENCONTRAR LOS MOVIMIENTOS DE CADA CLIENTE POR NOMBRE
 
       const pagosMovimientos = [...findPagos, ...findMovements];
 
