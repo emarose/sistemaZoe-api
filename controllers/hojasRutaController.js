@@ -13,10 +13,15 @@ module.exports = {
   },
   create: async function (req, res, next) {
     console.log(req.body);
+    const fecha = new Date(req.body.fecha);
+    fecha.setHours(4);
+    fecha.setMinutes(0);
+    fecha.setMilliseconds(0);
+    fecha.setSeconds(0);
     try {
       const document = new hojasRutaModel({
         movimientos: req.body.movimientos,
-        fecha: formatDateString(new Date(req.body.fecha)),
+        fecha: fecha,
         importeTotal: req.body.importeTotal,
         cajasTotal: req.body.cajasTotal,
         kgTotal: req.body.kgTotal,

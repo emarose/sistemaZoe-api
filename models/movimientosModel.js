@@ -46,6 +46,14 @@ const movimientosSchema = mongoose.Schema({
     default: 0,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
+  saldo_actual: {
+    type: Number,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
+  saldo_anterior: {
+    type: Number,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
 });
 
 movimientosSchema.virtual("precioCongelado_currency").get(function () {
@@ -70,6 +78,15 @@ movimientosSchema.virtual("importe_currency").get(function () {
     "$1."
   )}`;
 });
+
+movimientosSchema.virtual("saldo_anterior_currency").get(function () {
+  let saldo_anterior = this.saldo_anterior.toFixed(2).replace(".", ",");
+  return `$ ${String(saldo_anterior).replace(
+    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
+    "$1."
+  )}`;
+});
+
 movimientosSchema.set("toJSON", { getters: true, virtuals: true });
 
 module.exports = mongoose.model("movimientos", movimientosSchema);

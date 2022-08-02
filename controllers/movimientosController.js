@@ -4,6 +4,12 @@ const moment = require("moment");
 
 module.exports = {
   create: async function (req, res, next) {
+    const fecha = new Date(req.body.fecha);
+    fecha.setHours(4);
+    fecha.setMinutes(0);
+    fecha.setMilliseconds(0);
+    fecha.setSeconds(0);
+
     try {
       const data = new movimientosModel({
         cliente: req.body.cliente,
@@ -14,7 +20,9 @@ module.exports = {
         precioFresco: req.body.precioFresco,
         precioCongelado: req.body.precioCongelado,
         importe: req.body.importe,
-        fecha: new Date(req.body.fecha),
+        fecha: fecha,
+        saldo_actual: req.body.saldo_anterior + req.body.importe,
+        saldo_anterior: req.body.saldo_anterior,
       });
       const document = await data.save();
 
@@ -34,13 +42,15 @@ module.exports = {
     }
   },
   byDate: async function (req, res, next) {
-    const date = new Date(req.body.fecha);
-    console.log("FECHA:", date);
+    const fecha = new Date(req.body.fecha);
+    fecha.setHours(4);
+    fecha.setMinutes(0);
+    fecha.setMilliseconds(0);
+    fecha.setSeconds(0);
+
     try {
       const documents = await movimientosModel.find({
-        fecha: {
-          $lte: date,
-        },
+        fecha: fecha,
       });
       console.log(documents);
       res.json(documents);

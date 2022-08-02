@@ -19,7 +19,7 @@ module.exports = {
       });
 
       const response = await document.save();
-      /*      console.log(response); */
+
       res.json(response);
     } catch (e) {
       /*    res.status=400
@@ -33,7 +33,7 @@ module.exports = {
       const document = await cuentasCorrientesModel.find({
         titular_id: titular_id,
       });
-      /*       console.log(document); */
+
       res.json(document[0]);
     } catch (e) {
       next(e);

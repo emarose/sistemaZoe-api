@@ -6,61 +6,80 @@ const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
 const formatDateString = require("../util/utils.js");
 const PDFDocumentTable = require("pdfkit-table");
 /* const PDFDocument = require("pdfkit"); */
-
+const moment = require("moment");
 const fs = require("fs");
 
+function formatNumberToCurrency(num) {
+  let strNum = num.toFixed(2).replace(".", ",");
+  return `$ ${String(strNum).replace(
+    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
+    "$1."
+  )}`;
+}
 module.exports = {
   entrefechas: async function (req, res, next) {
-    function formatNumberToCurrency(num) {
-      let strNum = num.toFixed(2).replace(".", ",");
-      return `$ ${String(strNum).replace(
-        /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
-        "$1."
-      )}`;
-    }
-
-    console.log(req.body.data);
-
     const { initDate, endDate, codigo, CC_id } = req.body.data;
-    console.log("ID:", CC_id);
+
+    const emision = formatDateString(new Date());
+
+    const fechaInicio = new Date(initDate);
+    fechaInicio.setHours(4);
+    fechaInicio.setMinutes(0);
+    fechaInicio.setMilliseconds(0);
+    fechaInicio.setSeconds(0);
+
+    const fechaFin = new Date(endDate);
+    fechaFin.setHours(8);
+    fechaFin.setMinutes(0);
+    fechaFin.setMilliseconds(0);
+    fechaFin.setSeconds(0);
+    console.log("fecha inicio:", fechaInicio, "fecha final:", fechaFin);
+
+    const desde = moment(fechaInicio).format("DD/MM/YYYY");
+    const hasta = moment(fechaFin).format("DD/MM/YYYY");
     try {
-      const fechaDesde = formatDateString(new Date(initDate));
-      const fechaHasta = formatDateString(new Date(endDate));
+      const findMovements = await movimientosModel
+        .find({
+          fecha: {
+            $gte: fechaInicio,
+            $lte: fechaFin,
+          },
+          cliente: codigo,
+        })
+        .sort({ _id: -1 });
+      console.log("Movimientos:", findMovements);
 
-      const findMovementsBetweenDates = await movimientosModel.find({
-        fecha: {
-          $gte: new Date(initDate),
-          $lte: new Date(endDate),
-        },
-        cliente: codigo,
-      });
+      const findPagos = await pagosModel
+        .find({
+          fecha: {
+            $gte: new Date(initDate),
+            $lte: new Date(endDate),
+          },
+          cliente: codigo,
+        })
+        .sort({ _id: -1 });
+      console.log("Pagos:", findPagos);
 
-      const findPagosBetweenDates = await pagosModel.find({
-        /*       fecha: {
-          $gte: fechaDesde,
-          $lte: fechaHasta,
-        }, */
-        cliente: codigo,
-      });
-      /* 
       const findCC = await cuentasCorrientesModel.find({ _id: CC_id });
+      console.log("Cuenta Corriente:", findCC);
 
-      console.log("CC:", findCC.saldo); */
+      const pagosMovimientos = [...findPagos, ...findMovements];
 
-      const pagosMovimientos = [
-        ...findPagosBetweenDates,
-        ...findMovementsBetweenDates,
-      ];
       let arr = [];
 
       let cajas;
       let kgCong;
+      let totalImporte = 0;
+      let totalCajas = 0;
+      let totalKgCong = 0;
+      let calcImportes = 0;
+      let calcPagos = 0;
 
       for (let i = 0; i < pagosMovimientos.length; i++) {
         if (!pagosMovimientos[i].cajas) {
           cajas = "";
         } else {
-          cajas = `${pagosMovimientos[i].cajas} Cajas\n `;
+          cajas = `${pagosMovimientos[i].cajas} Cajas \n`;
         }
 
         if (!pagosMovimientos[i].kgCong) {
@@ -70,26 +89,562 @@ module.exports = {
         }
         if (!pagosMovimientos[i].importe) {
           data = {
-            cliente: pagosMovimientos[i].cliente,
-            fecha: pagosMovimientos[i].fecha,
+            //PAGOS
+            cliente: pagosMovimientos[i].cliente.toUpperCase(),
+            fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
             concepto: pagosMovimientos[i].concepto,
-            monto: formatNumberToCurrency(pagosMovimientos[i].monto),
-            importe: "------------",
+            importe: "­", //DEBE
+            monto: formatNumberToCurrency(pagosMovimientos[i].monto), //HABER
+            saldo: pagosMovimientos[i].saldo_anterior_currency,
           };
+          calcPagos = calcPagos + pagosMovimientos[i].monto;
         } else {
+          //MOVIMIENTOS
           data = {
-            cliente: pagosMovimientos[i].cliente,
-            fecha: pagosMovimientos[i].fecha,
-            concepto: `${cajas}${kgCong} Planta: ${pagosMovimientos[i].planta} \n Vehículo: ${pagosMovimientos[i].vehiculo}`,
-            monto: "-------------",
-            importe: formatNumberToCurrency(pagosMovimientos[i].importe),
+            cliente: pagosMovimientos[i].cliente.toUpperCase(),
+            fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
+            concepto: `${cajas}${kgCong}Planta: ${pagosMovimientos[
+              i
+            ].planta.toUpperCase()}\nVehículo: ${pagosMovimientos[
+              i
+            ].vehiculo.toUpperCase()}`,
+            totalKg: pagosMovimientos[i].saldo_anterior_currency,
+            importe: formatNumberToCurrency(pagosMovimientos[i].importe), //DEBE
+            monto: "-", //HABER
+            saldo: pagosMovimientos[i].saldo_anterior_currency,
           };
+          calcImportes = calcImportes + pagosMovimientos[i].importe;
+          totalCajas = totalCajas + pagosMovimientos[i].cajas;
+          totalKgCong = totalKgCong + pagosMovimientos[i].kgCong;
         }
+
+        totalImporte = formatNumberToCurrency(calcImportes - calcPagos);
         arr.push(data);
       }
 
+      const ordered = [...arr].sort((a, b) => (a.fecha > b.fecha ? 1 : -1));
+      /*   ordered.sort((a, b) => (a._id > b._id ? 1 : -1)); */
+
+      ordered.push({
+        monto: "Saldo actual:",
+        saldo: {
+          label: findCC[0].saldo_currency,
+          options: { fontFamily: "Courier-Bold" },
+        },
+      });
+
+      /* COMIENZO DOCUMENTO PDF */
       const doc = new PDFDocumentTable({
-        margin: 30,
+        margin: 20,
+        size: "A4",
+      });
+
+      doc.pipe(fs.createWriteStream("Exported/ListadoEntreFechas.pdf"));
+      res.setHeader("Content-type", "application/pdf");
+      doc.pipe(res);
+      /* titulo */
+      doc
+        .fontSize(20)
+        .font("Courier-BoldOblique")
+        .text("Transporte Zoe")
+        .moveDown();
+      doc.rect(17, 12, 175, 30).strokeColor("grey").stroke();
+
+      const table = {
+        title: `Resumen entre fechas:  ${desde} - ${hasta}`,
+        subtitle: `Fecha de emisión:  ${emision}`,
+        headers: [
+          {
+            label: "Codigo",
+            property: "cliente",
+            valign: "center",
+            align: "center",
+            width: 65,
+          },
+          {
+            label: "Fecha",
+            property: "fecha",
+            valign: "center",
+            align: "center",
+            width: 60,
+          },
+          {
+            label: "Concepto",
+            property: "concepto",
+            valign: "center",
+            align: "center",
+            width: 170,
+          },
+          {
+            label: "Debe",
+            property: "importe",
+            valign: "center",
+            align: "center",
+            width: 80,
+          },
+          {
+            label: "Haber",
+            property: "monto",
+            valign: "center",
+            align: "center",
+            width: 80,
+          },
+
+          {
+            label: "Saldo",
+            property: "saldo",
+            valign: "center",
+            align: "center",
+            width: 100,
+          },
+        ],
+        datas: ordered,
+      };
+
+      /*    const saldoTable = {
+        headers: [
+          {
+            label: "",
+            property: "",
+            valign: "center",
+            align: "center",
+          },
+          {
+            label: "",
+            property: "",
+            valign: "center",
+            align: "center",
+          },
+          {
+            label: "",
+            property: "",
+            valign: "center",
+            align: "center",
+          },
+
+          {
+            label: "Debe",
+            property: "importe",
+            valign: "center",
+            align: "center",
+          },
+          {
+            label: "Haber",
+            property: "monto",
+            valign: "center",
+            align: "center",
+          },
+
+          {
+            label: "Saldo",
+            property: "saldo",
+            valign: "center",
+            align: "center",
+          },
+        ],
+        datas: arr,
+      }; */
+
+      const options = {
+        // {Number} default: undefined // A4 595.28 x 841.89 (portrait) (about width sizes)
+        x: 0, // {Number} default: undefined | doc.x
+        rowSpacing: 10,
+        colSpacing: 10,
+
+        // functions
+        prepareHeader: () => doc.font("Courier-Bold").fontSize(10), // {Function}
+        prepareRow: (row, i) => doc.font("Courier").fontSize(10), // {Function}
+      };
+      const callback = () => {};
+      doc.table(table, options, callback);
+
+      doc
+        .moveDown(2)
+        .fontSize(11)
+        .font("Courier-Bold")
+        .text("Datos del período");
+
+      doc
+        .moveDown()
+        .fontSize(10)
+        .font("Courier")
+        .text("Cantidad de cajas: ", { continued: true })
+        .font("Courier-Bold")
+        .text(totalCajas);
+
+      doc
+        .moveDown()
+        .fontSize(10)
+        .font("Courier")
+        .text("Kg de congelado: ", { continued: true })
+        .font("Courier-Bold")
+        .text(totalKgCong);
+      doc
+        .moveDown()
+        .fontSize(10)
+        .font("Courier")
+        .text("Importe del período: ", { continued: true })
+        .font("Courier-Bold")
+        .text(totalImporte);
+
+      doc.end();
+    } catch (e) {
+      next(e);
+    }
+  },
+  entrefechasTodos: async function (req, res, next) {
+    const { initDate, endDate } = req.body.data;
+    console.log(req.body.data);
+    const emision = formatDateString(new Date());
+
+    const fechaInicio = new Date(initDate);
+    fechaInicio.setHours(4);
+    fechaInicio.setMinutes(0);
+    fechaInicio.setMilliseconds(0);
+    fechaInicio.setSeconds(0);
+
+    const fechaFin = new Date(endDate);
+    fechaFin.setHours(8);
+    fechaFin.setMinutes(0);
+    fechaFin.setMilliseconds(0);
+    fechaFin.setSeconds(0);
+
+    const desde = moment(fechaInicio).format("DD/MM/YYYY");
+    const hasta = moment(fechaFin).format("DD/MM/YYYY");
+
+    try {
+      const findMovements = await movimientosModel
+        .find({
+          fecha: {
+            $gte: fechaInicio,
+            $lte: fechaFin,
+          },
+        })
+        .sort({ cliente: -1 });
+      /*  console.log("Movimientos:", findMovements); */
+
+      const findPagos = await pagosModel
+        .find({
+          fecha: {
+            $gte: new Date(initDate),
+            $lte: new Date(endDate),
+          },
+        })
+        .sort({ cliente: -1 });
+      /*       console.log("Pagos:", findPagos);
+       */
+      const findCC = await cuentasCorrientesModel.find({});
+      /*       console.log("Cuenta Corriente:", findCC);
+       */
+      const findTitulares = await titularesModel.find({});
+
+      for (let i = 0; i < findTitulares.length; i++) {
+        if ((findTitulares[i]._id, "===", findCC[i].titular_id))
+          console.log("asd");
+      }
+
+      const pagosMovimientos = [...findPagos, ...findMovements];
+
+      let arr = [];
+
+      let cajas;
+      let kgCong;
+      let totalImporte = 0;
+      let totalCajas = 0;
+      let totalKgCong = 0;
+      let calcImportes = 0;
+      let calcPagos = 0;
+
+      for (let i = 0; i < pagosMovimientos.length; i++) {
+        if (!pagosMovimientos[i].cajas) {
+          cajas = "";
+        } else {
+          cajas = `${pagosMovimientos[i].cajas} Cajas \n`;
+        }
+
+        if (!pagosMovimientos[i].kgCong) {
+          kgCong = "";
+        } else {
+          kgCong = `${pagosMovimientos[i].kgCong} Kg. Congelado\n`;
+        }
+
+        if (!pagosMovimientos[i].importe) {
+          data = {
+            //PAGOS
+            cliente: pagosMovimientos[i].cliente.toUpperCase(),
+            fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
+            concepto: pagosMovimientos[i].concepto,
+            importe: "­", //DEBE
+            monto: formatNumberToCurrency(pagosMovimientos[i].monto), //HABER
+            saldo: pagosMovimientos[i].saldo_anterior_currency,
+          };
+          calcPagos = calcPagos + pagosMovimientos[i].monto;
+        } else {
+          //MOVIMIENTOS
+          data = {
+            cliente: pagosMovimientos[i].cliente.toUpperCase(),
+            fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
+            concepto: `${cajas}${kgCong}Planta: ${pagosMovimientos[
+              i
+            ].planta.toUpperCase()}\nVehículo: ${pagosMovimientos[
+              i
+            ].vehiculo.toUpperCase()}`,
+            totalKg: pagosMovimientos[i].saldo_anterior_currency,
+            importe: formatNumberToCurrency(pagosMovimientos[i].importe), //DEBE
+            monto: "-", //HABER
+            saldo: pagosMovimientos[i].saldo_anterior_currency,
+          };
+
+          calcImportes = calcImportes + pagosMovimientos[i].importe;
+          totalCajas = totalCajas + pagosMovimientos[i].cajas;
+          totalKgCong = totalKgCong + pagosMovimientos[i].kgCong;
+        }
+
+        totalImporte = formatNumberToCurrency(calcImportes - calcPagos);
+
+        arr.push(data);
+      }
+
+      const ordered = [...arr].sort((a, b) => (a.cliente > b.cliente ? 1 : -1));
+      /*   ordered.sort((a, b) => (a._id > b._id ? 1 : -1)); */
+
+      ordered.push({
+        monto: "Saldo actual:",
+        saldo: {
+          label: findCC[0].saldo_currency,
+          options: { fontFamily: "Courier-Bold" },
+        },
+      });
+
+      /* COMIENZO DOCUMENTO PDF */
+      const doc = new PDFDocumentTable({
+        margin: 20,
+        size: "A4",
+        bufferPages: true,
+      });
+      /*       doc.addPage(); */
+
+      doc.pipe(fs.createWriteStream("Exported/ListadoEntreFechas.pdf"));
+      res.setHeader("Content-type", "application/pdf");
+      doc.pipe(res);
+      /* titulo */
+      doc
+        .fontSize(20)
+        .font("Courier-BoldOblique")
+        .text("Transporte Zoe")
+        .moveDown();
+      doc.rect(17, 12, 175, 30).strokeColor("grey").stroke();
+
+      const table = {
+        title: `Resumen entre fechas:  ${desde} - ${hasta}`,
+        subtitle: `Fecha de emisión:  ${emision}`,
+        headers: [
+          {
+            label: "Codigo",
+            property: "cliente",
+            valign: "center",
+            align: "center",
+            width: 65,
+          },
+          {
+            label: "Fecha",
+            property: "fecha",
+            valign: "center",
+            align: "center",
+            width: 60,
+          },
+          {
+            label: "Concepto",
+            property: "concepto",
+            valign: "center",
+            align: "center",
+            width: 170,
+          },
+          {
+            label: "Debe",
+            property: "importe",
+            valign: "center",
+            align: "center",
+            width: 80,
+          },
+          {
+            label: "Haber",
+            property: "monto",
+            valign: "center",
+            align: "center",
+            width: 80,
+          },
+
+          {
+            label: "Saldo",
+            property: "saldo",
+            valign: "center",
+            align: "center",
+            width: 100,
+          },
+        ],
+        datas: ordered,
+      };
+
+      /*    const saldoTable = {
+        headers: [
+          {
+            label: "",
+            property: "",
+            valign: "center",
+            align: "center",
+          },
+          {
+            label: "",
+            property: "",
+            valign: "center",
+            align: "center",
+          },
+          {
+            label: "",
+            property: "",
+            valign: "center",
+            align: "center",
+          },
+
+          {
+            label: "Debe",
+            property: "importe",
+            valign: "center",
+            align: "center",
+          },
+          {
+            label: "Haber",
+            property: "monto",
+            valign: "center",
+            align: "center",
+          },
+
+          {
+            label: "Saldo",
+            property: "saldo",
+            valign: "center",
+            align: "center",
+          },
+        ],
+        datas: arr,
+      }; */
+
+      const options = {
+        // {Number} default: undefined // A4 595.28 x 841.89 (portrait) (about width sizes)
+        x: 0, // {Number} default: undefined | doc.x
+        rowSpacing: 10,
+        colSpacing: 10,
+
+        // functions
+        prepareHeader: () => doc.font("Courier-Bold").fontSize(10), // {Function}
+        prepareRow: (row, i) => doc.font("Courier").fontSize(10), // {Function}
+      };
+      const callback = () => {};
+      doc.table(table, options, callback);
+
+      doc
+        .moveDown(2)
+        .fontSize(11)
+        .font("Courier-Bold")
+        .text("Datos del período");
+
+      doc
+        .moveDown()
+        .fontSize(10)
+        .font("Courier")
+        .text("Cantidad de cajas: ", { continued: true })
+        .font("Courier-Bold")
+        .text(totalCajas);
+
+      doc
+        .moveDown()
+        .fontSize(10)
+        .font("Courier")
+        .text("Kg de congelado: ", { continued: true })
+        .font("Courier-Bold")
+        .text(totalKgCong);
+      doc
+        .moveDown()
+        .fontSize(10)
+        .font("Courier")
+        .text("Importe del período: ", { continued: true })
+        .font("Courier-Bold")
+        .text(totalImporte);
+
+      doc.end();
+    } catch (e) {
+      next(e);
+    }
+  },
+  resumenHoja: async function (req, res, next) {
+    const initDate = req.body.data;
+
+    const emision = formatDateString(new Date());
+
+    const fecha = new Date(initDate);
+    fecha.setHours(4);
+    fecha.setMinutes(0);
+    fecha.setMilliseconds(0);
+    fecha.setSeconds(0);
+
+    const desde = moment(fecha).format("DD/MM/YYYY");
+
+    try {
+      const findHojaRuta = await hojasRutaModel.find({
+        fecha: fecha,
+      });
+      console.log(
+        "Hoja:",
+        findHojaRuta,
+        "idmovimiento:",
+        findHojaRuta[0].movimientos[0]
+      );
+
+      const findMovementsById = await movimientosModel.find({
+        _id: {
+          $in: findHojaRuta[0].movimientos,
+        },
+      });
+
+      console.log("Movimientos:", findMovementsById);
+
+      let arr = [];
+      let totalImporte = 0;
+      let totalCajas = 0;
+      let totalKgCong = 0;
+      let calc = 0;
+      for (let i = 0; i < findMovementsById.length; i++) {
+        data = {
+          fecha: moment(findMovementsById[i].fecha).format("DD/MM/YYYY"),
+          cliente: findMovementsById[i].cliente.toUpperCase(),
+          planta: findMovementsById[i].planta.toUpperCase(),
+          vehiculo: findMovementsById[i].vehiculo,
+          cajas:
+            findMovementsById[i].cajas !== 0 ? findMovementsById[i].cajas : "-",
+          kgCong:
+            findMovementsById[i].kgCong !== 0
+              ? findMovementsById[i].kgCong + "Kg"
+              : "-",
+          importe: formatNumberToCurrency(findMovementsById[i].importe),
+        };
+
+        arr.push(data);
+      }
+
+      /*   const ordered = [...arr].sort((a, b) => (a.fecha > b.fecha ? 1 : -1));  */
+
+      /*  ordered.push({
+        monto: "Saldo actual:",
+        saldo: {
+          label: findCC[0].saldo_currency,
+          options: { fontFamily: "Courier-Bold" },
+        },
+      }); */
+
+      /* COMIENZO DOCUMENTO PDF */
+      const doc = new PDFDocumentTable({
+        margin: 20,
         size: "A4",
       });
 
@@ -97,11 +652,17 @@ module.exports = {
       res.setHeader("Content-type", "application/pdf");
       doc.pipe(res);
 
-      doc.fontSize(16).font("Helvetica").text("Transporte Zoe").moveDown();
+      doc
+        .fontSize(20)
+        .font("Courier-BoldOblique")
+        .text("Transporte Zoe")
+        .moveDown();
+
+      doc.rect(17, 12, 175, 30).strokeColor("grey").stroke();
 
       const table = {
-        title: `Resumen entre fechas:  ${fechaDesde} - ${fechaHasta}`,
-        subtitle: `Fecha de emisión:  ${new Date().toLocaleDateString()}`,
+        title: `Resumen Hoja de Ruta ${desde}`,
+        subtitle: `Fecha de emisión: ${emision}`,
         headers: [
           {
             label: "Codigo",
@@ -116,44 +677,41 @@ module.exports = {
             align: "center",
           },
           {
-            label: "Concepto",
-            property: "concepto",
+            label: "Planta",
+            property: "planta",
+            valign: "center",
+            align: "center",
+          },
+          {
+            label: "Vehículo",
+            property: "vehiculo",
+            valign: "center",
+            align: "center",
+          },
+          {
+            label: "Cajas",
+            property: "cajas",
+            valign: "center",
+            align: "center",
+          },
+          {
+            label: "Congelado",
+            property: "kgCong",
             valign: "center",
             align: "center",
           },
 
-          {
-            label: "Debe",
-            property: "importe",
-            valign: "center",
-            align: "center",
-          },
-          {
-            label: "Haber",
-            property: "monto",
-            valign: "center",
-            align: "center",
-          },
-
-          {
-            label: "Saldo",
-            property: "saldo",
-            valign: "center",
-            align: "center",
-          },
-          /* 
           {
             label: "Importe",
             property: "importe",
             valign: "center",
             align: "center",
-            width: 100,
-          }, */
+          },
         ],
         datas: arr,
       };
 
-      const saldoTable = {
+      /*    const saldoTable = {
         headers: [
           {
             label: "",
@@ -195,10 +753,53 @@ module.exports = {
           },
         ],
         datas: arr,
+      }; */
+
+      const options = {
+        rowSpacing: 10,
+        colSpacing: 10,
+
+        // functions
+        prepareHeader: () => doc.font("Courier-Bold").fontSize(10),
+        prepareRow: (row, i) => doc.font("Courier").fontSize(10),
       };
-      const options = {};
+
       const callback = () => {};
       doc.table(table, options, callback);
+
+      /*   doc
+        .rect(15, doc.y + 35, 250, doc.y - 88)
+        .strokeColor("grey")
+        .stroke(); */
+
+      doc
+        .moveDown(2)
+        .fontSize(11)
+        .font("Courier-Bold")
+        .text("Datos del período");
+
+      doc
+        .moveDown()
+        .fontSize(10)
+        .font("Courier")
+        .text("Cantidad de cajas: ", { continued: true })
+        .font("Courier-Bold")
+        .text(findHojaRuta[0].cajasTotal);
+
+      doc
+        .moveDown()
+        .fontSize(10)
+        .font("Courier")
+        .text("Kg de congelado: ", { continued: true })
+        .font("Courier-Bold")
+        .text(findHojaRuta[0].kgTotal);
+      doc
+        .moveDown()
+        .fontSize(10)
+        .font("Courier")
+        .text("Importe del período: ", { continued: true })
+        .font("Courier-Bold")
+        .text(findHojaRuta[0].importeTotal_currency);
 
       doc.end();
     } catch (e) {

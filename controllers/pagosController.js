@@ -1,10 +1,12 @@
 const pagosModel = require("../models/pagosModel");
+const movimientosModel = require("../models/movimientosModel");
+
+const formatDateString = require("../util/utils");
 
 module.exports = {
   getAll: async function (req, res, next) {
     try {
       const document = await pagosModel.find();
-
       res.json(document);
     } catch (e) {
       next(e);
@@ -19,13 +21,31 @@ module.exports = {
     }
   },
   create: async function (req, res, next) {
+    console.log(req.body.debe, req.body.haber);
+    const fecha = new Date(req.body.fecha);
+    fecha.setHours(4);
+    fecha.setMinutes(0);
+    fecha.setMilliseconds(0);
+    fecha.setSeconds(0);
+
+    let calcularSaldoActual = req.body.debe - req.body.haber;
+
+    const movimientoPorFecha = await movimientosModel.find({
+      fecha: fecha,
+    });
+
+    const saldoUltimoMovimientoEnLaFecha =
+      movimientoPorFecha.slice(-1)[0].saldo_actual;
+    const saldo_anterior = saldoUltimoMovimientoEnLaFecha;
     try {
       const document = new pagosModel({
+        cliente: req.body.codigo,
         monto: req.body.monto,
         concepto: req.body.concepto,
         fecha: req.body.fecha,
         cuentaCorriente_id: req.body.cuentaCorriente_id,
-        cliente: req.body.codigo,
+        saldo_actual: saldoUltimoMovimientoEnLaFecha - req.body.monto,
+        saldo_anterior: saldo_anterior,
       });
 
       const response = await document.save();
