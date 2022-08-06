@@ -6,7 +6,9 @@ router.get("/", cuentasCorrientesController.getAll);
 router.post("/add/:id", cuentasCorrientesController.create);
 router.put("/haber", cuentasCorrientesController.agregarAlHaber);
 router.put("/debe", cuentasCorrientesController.agregarAlDebe);
+router.get("/getByName/:name", cuentasCorrientesController.getByName);
 router.get("/getById/:id", cuentasCorrientesController.getById);
+
 /* 
 router.get("/countCategories", categoriesController.amount); */
 

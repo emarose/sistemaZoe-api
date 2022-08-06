@@ -4,6 +4,7 @@ const movimientosController = require("../controllers/movimientosController");
 
 router.post("/add", movimientosController.create);
 router.post("/byDate", movimientosController.byDate);
+router.post("/betweenDates", movimientosController.betweenDates);
 router.get("/", movimientosController.getAll);
 router.get("/getByName/:name", movimientosController.getByName);
 

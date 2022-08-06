@@ -14,10 +14,11 @@ const cuentasCorrientesSchema = new mongoose.Schema({
     type: Number,
     required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
-  /*   saldo: {
-    type: Number,
-    default: 0,
-  }, */
+
+  isActive: {
+    type: Boolean,
+    required: [true, errorMessage.GENERAL.campo_obligatorio],
+  },
 });
 
 cuentasCorrientesSchema.virtual("debe_currency").get(function () {

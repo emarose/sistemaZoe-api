@@ -1,4 +1,5 @@
 const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
+const titularesModel = require("../models/titularesModel");
 
 module.exports = {
   getAll: async function (req, res, next) {
@@ -15,6 +16,7 @@ module.exports = {
       const document = new cuentasCorrientesModel({
         titular_id: req.params.id,
         debe: 0,
+        isActive: true,
         haber: 0,
       });
 
@@ -27,11 +29,17 @@ module.exports = {
       next(e);
     }
   },
-  getById: async function (req, res, next) {
-    const titular_id = req.params.id;
+  getByName: async function (req, res, next) {
+    const codigo = req.params.name;
     try {
+      const titular = await titularesModel.find({
+        codigo: codigo,
+      });
+
+      const id = titular[0]._id;
+
       const document = await cuentasCorrientesModel.find({
-        titular_id: titular_id,
+        titular_id: id,
       });
 
       res.json(document[0]);
@@ -39,7 +47,18 @@ module.exports = {
       next(e);
     }
   },
+  getById: async function (req, res, next) {
+    const id = req.params.id;
+    try {
+      const document = await cuentasCorrientesModel.find({
+        titular_id: id,
+      });
 
+      res.json(document[0]);
+    } catch (e) {
+      next(e);
+    }
+  },
   agregarAlHaber: async function (req, res, next) {
     const cuentaCorriente_id = req.body.cuentaCorriente_id;
     let monto = parseInt(req.body.monto);

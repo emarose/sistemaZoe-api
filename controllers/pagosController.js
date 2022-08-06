@@ -21,7 +21,6 @@ module.exports = {
     }
   },
   create: async function (req, res, next) {
-    console.log(req.body.debe, req.body.haber);
     const fecha = new Date(req.body.fecha);
     fecha.setHours(4);
     fecha.setMinutes(0);
@@ -30,12 +29,12 @@ module.exports = {
 
     let calcularSaldoActual = req.body.debe - req.body.haber;
 
-    const movimientoPorFecha = await movimientosModel.find({
-      fecha: fecha,
-    });
+    const movimientoPorFecha = await movimientosModel.find({});
+    console.log("movs", movimientoPorFecha);
 
     const saldoUltimoMovimientoEnLaFecha =
       movimientoPorFecha.slice(-1)[0].saldo_actual;
+
     const saldo_anterior = saldoUltimoMovimientoEnLaFecha;
     try {
       const document = new pagosModel({

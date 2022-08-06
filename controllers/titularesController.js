@@ -31,7 +31,7 @@ module.exports = {
   getByName: async function (req, res, next) {
     try {
       const document = await titularesModel.find({ codigo: req.params.name });
-      res.json(document);
+      res.json(document[0]);
     } catch (e) {
       next(e);
     }
