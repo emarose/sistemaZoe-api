@@ -54,7 +54,7 @@ app.use(function (err, req, res, next) {
   res.json({ error: true, message: err.message });
 });
 
-app.listen(/* process.env.PORT ||  */ 3000, () => {
+app.listen(process.env.PORT || 3000, () => {
   console.log("Express conectado");
 });
 
