@@ -76,27 +76,24 @@ module.exports = {
       let calcPagos = 0;
 
       for (let i = 0; i < pagosMovimientos.length; i++) {
-        if (!pagosMovimientos[i].cajas) {
-          cajas = "";
-        } else {
-          cajas = `${pagosMovimientos[i].cajas} Cajas \n`;
-        }
+        !pagosMovimientos[i].cajas
+          ? (cajas = "")
+          : (cajas = `${pagosMovimientos[i].cajas} Cajas \n`);
 
-        if (!pagosMovimientos[i].kgCong) {
-          kgCong = "";
-        } else {
-          kgCong = `${pagosMovimientos[i].kgCong} Kg. Congelado\n`;
-        }
+        !pagosMovimientos[i].kgCong
+          ? (kgCong = "")
+          : (kgCong = `${pagosMovimientos[i].kgCong} Kg. Congelado\n`);
 
         if (!pagosMovimientos[i].importe) {
+          //PAGOS
           data = {
-            //PAGOS
             cliente: pagosMovimientos[i].cliente.toUpperCase(),
             fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
-            concepto: pagosMovimientos[i].concepto,
-            importe: "­", //DEBE
-            monto: formatNumberToCurrency(pagosMovimientos[i].monto), //HABER
-            saldo: pagosMovimientos[i].saldo_anterior_currency,
+            concepto: pagosMovimientos[i].concepto.toUpperCase(),
+            importe: "­",
+            monto: formatNumberToCurrency(pagosMovimientos[i].monto),
+
+            saldo: pagosMovimientos[i].saldo_actual_currency,
           };
           calcPagos = calcPagos + pagosMovimientos[i].monto;
         } else {
@@ -112,7 +109,7 @@ module.exports = {
             totalKg: pagosMovimientos[i].saldo_anterior_currency,
             importe: formatNumberToCurrency(pagosMovimientos[i].importe), //DEBE
             monto: "-", //HABER
-            saldo: pagosMovimientos[i].saldo_anterior_currency,
+            saldo: pagosMovimientos[i].saldo_actual_currency,
           };
 
           calcImportes = calcImportes + pagosMovimientos[i].importe;
@@ -127,7 +124,7 @@ module.exports = {
       const ordered = [...arr].sort((a, b) => (a.fecha > b.fecha ? 1 : -1));
 
       ordered.push({
-        monto: "Importe período:",
+        monto: "Saldo período:",
         saldo: {
           label: totalImporte,
           options: { fontFamily: "Courier-Bold" },
@@ -156,7 +153,7 @@ module.exports = {
         subtitle: `Fecha de emisión:  ${emision}`,
         headers: [
           {
-            label: "Codigo",
+            label: "Nombre",
             property: "cliente",
             valign: "center",
             align: "center",
@@ -207,10 +204,18 @@ module.exports = {
         x: 0, // {Number} default: undefined | doc.x
         rowSpacing: 10,
         colSpacing: 10,
+        minRowHeight: 25,
 
         // functions
         prepareHeader: () => doc.font("Courier-Bold").fontSize(10), // {Function}
-        prepareRow: (row, i) => doc.font("Courier").fontSize(10), // {Function}
+        prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+          doc.font("Courier").fontSize(10), console.log(row.monto);
+          row.monto !== "-" && row.monto !== "Saldo período:"
+            ? doc.addBackground(rectRow, "grey", 0.02)
+            : null;
+
+          indexRow % 2 !== 0 && doc.addBackground(rectRow, "grey", 0.005);
+        },
       };
       const callback = () => {};
       doc.table(table, options, callback);
@@ -250,7 +255,7 @@ module.exports = {
     }
   },
   entrefechasTodos: async function (req, res, next) {
-    const { initDate, endDate } = req.body.data;
+    const { initDate, endDate, clientes } = req.body.data;
 
     const emision = formatDateString(new Date());
 
@@ -283,10 +288,10 @@ module.exports = {
             $lte: fechaFin,
           },
         }),
-        cuentasCorrientesModel.find(),
+        titularesModel.find(),
       ])
         .then((results) => {
-          const [movimientos, pagos, cuentasCorrientes] = results;
+          const [movimientos, pagos] = results;
           const pagosMovimientos = [...pagos, ...movimientos];
 
           pagosMovimientos.sort(function (a, b) {
@@ -295,9 +300,9 @@ module.exports = {
               Number(a.fecha - Number(b.fecha))
             );
           });
-
+          /* 
+          for (let i = 0; i < clientes.length; i++) { */
           let arr = [];
-
           let cajas;
           let kgCong;
           let totalImporte = 0;
@@ -305,6 +310,11 @@ module.exports = {
           let totalKgCong = 0;
           let calcImportes = 0;
           let calcPagos = 0;
+
+          const doc = new PDFDocumentTable({
+            margin: 20,
+            size: "A4",
+          });
 
           for (let i = 0; i < pagosMovimientos.length; i++) {
             if (!pagosMovimientos[i].cajas) {
@@ -320,14 +330,14 @@ module.exports = {
             }
 
             if (!pagosMovimientos[i].importe) {
+              //PAGOS
               data = {
-                //PAGOS
                 cliente: pagosMovimientos[i].cliente.toUpperCase(),
                 fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
-                concepto: pagosMovimientos[i].concepto,
+                concepto: pagosMovimientos[i].concepto.toUpperCase(),
                 importe: "­", //DEBE
                 monto: formatNumberToCurrency(pagosMovimientos[i].monto), //HABER
-                saldo: pagosMovimientos[i].saldo_anterior_currency,
+                saldo: pagosMovimientos[i].saldo_actual_currency,
               };
 
               calcPagos = calcPagos + pagosMovimientos[i].monto;
@@ -344,15 +354,16 @@ module.exports = {
                 totalKg: pagosMovimientos[i].saldo_anterior_currency,
                 importe: formatNumberToCurrency(pagosMovimientos[i].importe), //DEBE
                 monto: "-", //HABER
-                saldo: pagosMovimientos[i].saldo_anterior_currency,
+                saldo: pagosMovimientos[i].saldo_actual_currency,
               };
 
               calcImportes = calcImportes + pagosMovimientos[i].importe;
               totalCajas = totalCajas + pagosMovimientos[i].cajas;
               totalKgCong = totalKgCong + pagosMovimientos[i].kgCong;
             }
-            arr.push(data);
             totalImporte = formatNumberToCurrency(calcImportes - calcPagos);
+
+            arr.push(data);
 
             let len = i + 1;
 
@@ -360,19 +371,19 @@ module.exports = {
               pagosMovimientos[i].cliente !== pagosMovimientos[len]?.cliente
             ) {
               arr.push({
-                monto: "Importe Período:",
+                importe: "Importe total",
+                monto: "del Período:",
                 saldo: {
                   label: totalImporte,
-                  options: { fontFamily: "Courier-Bold" },
+                  options: {
+                    fontFamily: "Courier-Bold",
+                  },
                 },
               });
+              arr.push({ cliente: "fin" });
             }
           }
-          const doc = new PDFDocumentTable({
-            margin: 20,
-            size: "A4",
-            bufferPages: true,
-          });
+
           doc.pipe(fs.createWriteStream("Exported/ListadoEntreFechas.pdf"));
           res.setHeader("Content-type", "application/pdf");
           doc.pipe(res);
@@ -384,9 +395,19 @@ module.exports = {
             .moveDown();
           doc.rect(17, 12, 175, 30).strokeColor("grey").stroke();
 
+          doc
+            .fontSize(15)
+            .font("Courier-BoldOblique")
+            .text(`Resumen entre fechas: ${desde} - ${hasta}`)
+            .moveDown();
+
+          doc
+            .fontSize(11)
+            .font("Courier-BoldOblique")
+            .text(`Fecha de emisión: ${emision}`)
+            .moveDown();
+
           const table = {
-            title: `Resumen entre fechas:  ${desde} - ${hasta}`,
-            subtitle: `Fecha de emisión:  ${emision}`,
             headers: [
               {
                 label: "Codigo",
@@ -439,15 +460,20 @@ module.exports = {
             x: 0,
             rowSpacing: 10,
             colSpacing: 10,
-
+            minRowHeight: 25,
             // functions
-            prepareHeader: () => doc.font("Courier-Bold").fontSize(10), // {Function}
-            prepareRow: (row, i) => doc.font("Courier").fontSize(10), // {Function}
+            prepareHeader: () => doc.font("Courier-Bold").fontSize(11),
+            prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+              doc.font("Courier").fontSize(10),
+                row.monto !== "-" && doc.addBackground(rectRow, "grey", 0.02);
+              row.cliente === "fin" && doc.addBackground(rectRow, "red", 0.8);
+              indexRow % 2 !== 0 && doc.addBackground(rectRow, "grey", 0.005);
+            },
           };
 
           const callback = () => {};
           doc.table(table, options, callback);
-
+          /* 
           doc
             .moveDown(2)
             .fontSize(11)
@@ -475,8 +501,9 @@ module.exports = {
             .font("Courier")
             .text("Importe del período: ", { continued: true })
             .font("Courier-Bold")
-            .text(totalImporte);
+            .text(totalImporte); */
           doc.end();
+          /*    } */
         })
         .catch((err) => {
           console.error(err);
@@ -502,20 +529,12 @@ module.exports = {
       const findHojaRuta = await hojasRutaModel.find({
         fecha: fecha,
       });
-      console.log(
-        "Hoja:",
-        findHojaRuta,
-        "idmovimiento:",
-        findHojaRuta[0].movimientos[0]
-      );
 
       const findMovementsById = await movimientosModel.find({
         _id: {
           $in: findHojaRuta[0].movimientos,
         },
       });
-
-      console.log("Movimientos:", findMovementsById);
 
       let arr = [];
       let totalImporte = 0;
@@ -542,13 +561,20 @@ module.exports = {
 
       /*   const ordered = [...arr].sort((a, b) => (a.fecha > b.fecha ? 1 : -1));  */
 
-      /*  ordered.push({
-        monto: "Saldo actual:",
-        saldo: {
-          label: findCC[0].saldo_currency,
+      arr.push({
+        importe: {
+          label: findHojaRuta[0].importeTotal_currency,
           options: { fontFamily: "Courier-Bold" },
         },
-      }); */
+        cajas: {
+          label: ` ${findHojaRuta[0].cajasTotal}`,
+          options: { fontFamily: "Courier-Bold" },
+        },
+        kgCong: {
+          label: `${findHojaRuta[0].kgTotal}`,
+          options: { fontFamily: "Courier-Bold" },
+        },
+      });
 
       /* COMIENZO DOCUMENTO PDF */
       const doc = new PDFDocumentTable({
@@ -619,66 +645,20 @@ module.exports = {
         datas: arr,
       };
 
-      /*    const saldoTable = {
-        headers: [
-          {
-            label: "",
-            property: "",
-            valign: "center",
-            align: "center",
-          },
-          {
-            label: "",
-            property: "",
-            valign: "center",
-            align: "center",
-          },
-          {
-            label: "",
-            property: "",
-            valign: "center",
-            align: "center",
-          },
-
-          {
-            label: "Debe",
-            property: "importe",
-            valign: "center",
-            align: "center",
-          },
-          {
-            label: "Haber",
-            property: "monto",
-            valign: "center",
-            align: "center",
-          },
-
-          {
-            label: "Saldo",
-            property: "saldo",
-            valign: "center",
-            align: "center",
-          },
-        ],
-        datas: arr,
-      }; */
-
       const options = {
         rowSpacing: 10,
         colSpacing: 10,
-
+        minRowHeight: 25,
         // functions
         prepareHeader: () => doc.font("Courier-Bold").fontSize(10),
-        prepareRow: (row, i) => doc.font("Courier").fontSize(10),
+        prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+          doc.font("Courier").fontSize(10),
+            indexRow % 2 !== 0 && doc.addBackground(rectRow, "grey", 0.005);
+        },
       };
 
       const callback = () => {};
       doc.table(table, options, callback);
-
-      /*   doc
-        .rect(15, doc.y + 35, 250, doc.y - 88)
-        .strokeColor("grey")
-        .stroke(); */
 
       doc
         .moveDown(2)
@@ -692,7 +672,7 @@ module.exports = {
         .font("Courier")
         .text("Cantidad de cajas: ", { continued: true })
         .font("Courier-Bold")
-        .text(findHojaRuta[0].cajasTotal);
+        .text(`${findHojaRuta[0].cajasTotal} Cajas.`);
 
       doc
         .moveDown()
@@ -700,7 +680,7 @@ module.exports = {
         .font("Courier")
         .text("Kg de congelado: ", { continued: true })
         .font("Courier-Bold")
-        .text(findHojaRuta[0].kgTotal);
+        .text(`${findHojaRuta[0].kgTotal} Kg.`);
       doc
         .moveDown()
         .fontSize(10)

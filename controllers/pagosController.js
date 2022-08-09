@@ -27,15 +27,25 @@ module.exports = {
     fecha.setMilliseconds(0);
     fecha.setSeconds(0);
 
-    let calcularSaldoActual = req.body.debe - req.body.haber;
+    const movimientos = await movimientosModel
+      .find({ cliente: req.body.codigo, fecha: { $gte: fecha, $lte: fecha } })
+      .sort({ _id: -1 });
 
-    const movimientoPorFecha = await movimientosModel.find({});
-    console.log("movs", movimientoPorFecha);
+    const pagos = await pagosModel
+      .find({ cliente: req.body.codigo, fecha: { $gte: fecha, $lte: fecha } })
+      .sort({ _id: -1 });
 
-    const saldoUltimoMovimientoEnLaFecha =
-      movimientoPorFecha.slice(-1)[0].saldo_actual;
+    const pagosMovimientos = [...movimientos, ...pagos];
 
-    const saldo_anterior = saldoUltimoMovimientoEnLaFecha;
+    const ordered = [...pagosMovimientos].sort((a, b) =>
+      a.fecha > b.fecha ? 1 : -1
+    );
+
+    const ultimoSaldoActual = ordered.slice(-1)[0].saldo_actual;
+
+    console.log(ultimoSaldoActual);
+
+    /*     const saldo_anterior = saldoUltimoMovimientoEnLaFecha; */
     try {
       const document = new pagosModel({
         cliente: req.body.codigo,
@@ -43,16 +53,16 @@ module.exports = {
         concepto: req.body.concepto,
         fecha: req.body.fecha,
         cuentaCorriente_id: req.body.cuentaCorriente_id,
-        saldo_actual: saldoUltimoMovimientoEnLaFecha - req.body.monto,
-        saldo_anterior: saldo_anterior,
+        saldo_actual: ultimoSaldoActual - req.body.monto,
+        saldo_anterior: ultimoSaldoActual,
       });
 
       const response = await document.save();
 
       res.json(response);
     } catch (e) {
-      /*    res.status=400
-      e.status=400 */
+      console.log(e);
+
       next(e);
     }
   },

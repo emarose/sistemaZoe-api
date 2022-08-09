@@ -60,6 +60,7 @@ module.exports = {
   },
   betweenDates: async function (req, res, next) {
     const { initDate, endDate, codigo } = req.body.data;
+
     const fechaInicio = new Date(initDate);
     fechaInicio.setHours(4);
     fechaInicio.setMinutes(0);
@@ -82,6 +83,33 @@ module.exports = {
       });
 
       console.log(documents);
+      res.json(documents);
+    } catch (e) {
+      next(e);
+    }
+  },
+  betweenDatesAll: async function (req, res, next) {
+    const { initDate, endDate } = req.body.data;
+    const fechaInicio = new Date(initDate);
+    fechaInicio.setHours(4);
+    fechaInicio.setMinutes(0);
+    fechaInicio.setMilliseconds(0);
+    fechaInicio.setSeconds(0);
+
+    const fechaFin = new Date(endDate);
+    fechaFin.setHours(4);
+    fechaFin.setMinutes(0);
+    fechaFin.setMilliseconds(0);
+    fechaFin.setSeconds(0);
+
+    try {
+      const documents = await movimientosModel.find({
+        fecha: {
+          $gte: fechaInicio,
+          $lte: fechaFin,
+        },
+      });
+
       res.json(documents);
     } catch (e) {
       next(e);
