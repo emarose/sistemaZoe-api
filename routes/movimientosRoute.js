@@ -6,6 +6,8 @@ router.post("/add", movimientosController.create);
 router.post("/byDate", movimientosController.byDate);
 router.post("/betweenDates", movimientosController.betweenDates);
 router.post("/betweenDatesAll", movimientosController.betweenDatesAll);
+router.post("/delete/:id", movimientosController.deleteMovement);
+
 router.get("/", movimientosController.getAll);
 router.get("/getByName/:name", movimientosController.getByName);
 

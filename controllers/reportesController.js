@@ -466,7 +466,7 @@ module.exports = {
             prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
               doc.font("Courier").fontSize(10),
                 row.monto !== "-" && doc.addBackground(rectRow, "grey", 0.02);
-              row.cliente === "fin" && doc.addBackground(rectRow, "red", 0.8);
+              row.cliente === "fin" && doc.addBackground(rectRow, "white", 1);
               indexRow % 2 !== 0 && doc.addBackground(rectRow, "grey", 0.005);
             },
           };
@@ -503,6 +503,7 @@ module.exports = {
             .font("Courier-Bold")
             .text(totalImporte); */
           doc.end();
+
           /*    } */
         })
         .catch((err) => {

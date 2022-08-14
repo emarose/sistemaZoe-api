@@ -1,4 +1,7 @@
 const movimientosModel = require("../models/movimientosModel");
+const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
+const titularesModel = require("../models/titularesModel");
+
 const formatDateString = require("../util/utils");
 const moment = require("moment");
 
@@ -52,7 +55,7 @@ module.exports = {
       const documents = await movimientosModel.find({
         fecha: fecha,
       });
-      console.log(documents);
+
       res.json(documents);
     } catch (e) {
       next(e);
@@ -123,6 +126,28 @@ module.exports = {
       res.json(documents);
 
       /*  console.log(documents); */
+    } catch (e) {
+      next(e);
+    }
+  },
+  deleteMovement: async function (req, res, next) {
+    const movementId = req.params.id;
+    const titular_id = req.body.data;
+    console.log(movementId, titular_id);
+    try {
+      const movimiento = await movimientosModel.find({ _id: movementId });
+      let importe = movimiento[0].importe;
+
+      const document = await cuentasCorrientesModel.updateOne(
+        { titular_id: titular_id },
+        { $inc: { debe: -importe } }
+      );
+      console.log(document);
+      const deleted = await movimientosModel.deleteOne({ _id: movementId });
+
+      console.log(deleted);
+
+      res.json(document);
     } catch (e) {
       next(e);
     }
