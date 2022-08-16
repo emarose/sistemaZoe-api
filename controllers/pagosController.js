@@ -28,18 +28,23 @@ module.exports = {
     fecha.setSeconds(0);
 
     const movimientos = await movimientosModel
-      .find({ cliente: req.body.codigo, fecha: { $gte: fecha, $lte: fecha } })
+      .find({ cliente: req.body.codigo })
       .sort({ _id: -1 });
 
+    console.log(movimientos);
     const pagos = await pagosModel
-      .find({ cliente: req.body.codigo, fecha: { $gte: fecha, $lte: fecha } })
+      .find({ cliente: req.body.codigo })
       .sort({ _id: -1 });
 
     const pagosMovimientos = [...movimientos, ...pagos];
 
+    console.log(pagosMovimientos);
+
     const ordered = [...pagosMovimientos].sort((a, b) =>
       a.fecha > b.fecha ? 1 : -1
     );
+
+    console.log(ordered);
 
     const ultimoSaldoActual = ordered.slice(-1)[0].saldo_actual;
 

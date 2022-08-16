@@ -36,14 +36,39 @@ module.exports = {
       next(e);
     }
   },
-  getByName: async function (req, res, next) {
+  getByDate: async function (req, res, next) {
+    const date = new Date(req.params.date);
+    date.setHours(4);
+    date.setMinutes(0);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+
     try {
-      const document = await titularesModel.find({ codigo: req.params.codigo });
-      console.log(document);
-      res.json(document);
+      const document = await hojasRutaModel.find({
+        fecha: date,
+      });
+
+      res.json(document[0]);
     } catch (e) {
       next(e);
     }
+  },
+  modificar: async function (req, res, next) {
+    console.log("BODY:", req.body, "PARAMS:", req.params);
+
+    /*  try {
+      const update = await eventsModel.updateOne(
+        { code: req.params.code },
+        { $push: { orders: req.body.orders } },
+        { multi: true }
+      );
+
+      console.log(update);
+      res.json(update);
+    } catch (e) {
+      console.log(e);
+      next(e);
+    } */
   } /*
    getByCode: async function (req, res, next) {
     try {

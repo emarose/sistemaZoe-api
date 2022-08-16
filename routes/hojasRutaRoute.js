@@ -4,7 +4,9 @@ const hojasRutaController = require("../controllers/hojasRutaController");
 
 router.get("/", hojasRutaController.getAll);
 router.post("/add", hojasRutaController.create);
-router.get("/:codigo", hojasRutaController.getByName);
+router.get("/getByDate/:date", hojasRutaController.getByDate);
+router.put("/:id", hojasRutaController.modificar);
+
 /* router.get("/countEvents", eventsController.amount);
 router.get("/byId/:id", eventsController.getById);
 router.put("/:id", eventsController.update);

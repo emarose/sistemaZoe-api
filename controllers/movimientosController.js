@@ -56,6 +56,7 @@ module.exports = {
         fecha: fecha,
       });
 
+      console.log(documents);
       res.json(documents);
     } catch (e) {
       next(e);
@@ -152,7 +153,20 @@ module.exports = {
       next(e);
     }
   },
+  editMovement: async function (req, res, next) {
+    console.log(req.body, req.params);
+    const { cliente, planta, vehiculo, cajas, kgCong, importe } = req.body;
 
+    try {
+      const doc = await movimientosModel.findOne({ _id: req.params.id });
+      const update = { cliente, planta, vehiculo, cajas, kgCong, importe };
+      await doc.updateOne(update);
+
+      res.json(doc);
+    } catch (e) {
+      console.log(e);
+    }
+  },
   /*  
   getById: async function (req, res, next) {
    
