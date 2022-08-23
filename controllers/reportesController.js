@@ -3,19 +3,12 @@ const pagosModel = require("../models/pagosModel");
 const movimientosModel = require("../models/movimientosModel");
 const titularesModel = require("../models/titularesModel");
 const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
-const formatDateString = require("../util/utils.js");
+const { formatDateString } = require("../util/utils");
+const { formatNumberToCurrency } = require("../util/utils");
 const PDFDocumentTable = require("pdfkit-table");
 /* const PDFDocument = require("pdfkit"); */
 const moment = require("moment");
 const fs = require("fs");
-
-function formatNumberToCurrency(num) {
-  let strNum = num.toFixed(2).replace(".", ",");
-  return `$ ${String(strNum).replace(
-    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
-    "$1."
-  )}`;
-}
 
 module.exports = {
   entrefechas: async function (req, res, next) {
@@ -691,6 +684,226 @@ module.exports = {
         .text(findHojaRuta[0].importeTotal_currency);
 
       doc.end();
+    } catch (e) {
+      next(e);
+    }
+  },
+  resumenHojasEntreFechas: async function (req, res, next) {
+    const { initDate, endDate } = req.body.data;
+
+    const emision = formatDateString(new Date());
+
+    const fechaInicio = new Date(initDate);
+    fechaInicio.setHours(4);
+    fechaInicio.setMinutes(0);
+    fechaInicio.setMilliseconds(0);
+    fechaInicio.setSeconds(0);
+
+    const fechaFin = new Date(endDate);
+    fechaFin.setHours(8);
+    fechaFin.setMinutes(0);
+    fechaFin.setMilliseconds(0);
+    fechaFin.setSeconds(0);
+
+    const desde = moment(fechaInicio).format("DD/MM/YYYY");
+    const hasta = moment(fechaFin).format("DD/MM/YYYY");
+
+    try {
+      Promise.all([
+        movimientosModel.find({
+          fecha: {
+            $gte: fechaInicio,
+            $lte: fechaFin,
+          },
+        }),
+        hojasRutaModel.find({
+          fecha: {
+            $gte: fechaInicio,
+            $lte: fechaFin,
+          },
+        }),
+      ])
+        .then((results) => {
+          const [movimientos, hojas] = results;
+          console.log(hojas);
+
+          let arr = [];
+          let cajas;
+          let kgCong;
+          let totalImporte = 0;
+          let totalCajas = 0;
+          let totalKgCong = 0;
+          let calcImportes = 0;
+          let calcPagos = 0;
+
+          const doc = new PDFDocumentTable({
+            margin: 20,
+            size: "A4",
+          });
+
+          /* for (let i = 0; i < hojas.length; i++) {
+            if (!pagosMovimientos[i].cajas) {
+              cajas = "";
+            } else {
+              cajas = `${pagosMovimientos[i].cajas} Cajas \n`;
+            }
+
+            if (!pagosMovimientos[i].kgCong) {
+              kgCong = "";
+            } else {
+              kgCong = `${pagosMovimientos[i].kgCong} Kg. Congelado\n`;
+            }
+
+            if (!pagosMovimientos[i].importe) {
+              //PAGOS
+              data = {
+                cliente: pagosMovimientos[i].cliente.toUpperCase(),
+                fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
+                concepto: pagosMovimientos[i].concepto.toUpperCase(),
+                importe: "­", //DEBE
+                monto: formatNumberToCurrency(pagosMovimientos[i].monto), //HABER
+                saldo: pagosMovimientos[i].saldo_actual_currency,
+              };
+
+              calcPagos = calcPagos + pagosMovimientos[i].monto;
+            } else {
+              //MOVIMIENTOS
+              data = {
+                cliente: pagosMovimientos[i].cliente.toUpperCase(),
+                fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
+                concepto: `${cajas}${kgCong}Planta: ${pagosMovimientos[
+                  i
+                ].planta.toUpperCase()}\nVehículo: ${pagosMovimientos[
+                  i
+                ].vehiculo.toUpperCase()}`,
+                totalKg: pagosMovimientos[i].saldo_anterior_currency,
+                importe: formatNumberToCurrency(pagosMovimientos[i].importe), //DEBE
+                monto: "-", //HABER
+                saldo: pagosMovimientos[i].saldo_actual_currency,
+              };
+
+              calcImportes = calcImportes + pagosMovimientos[i].importe;
+              totalCajas = totalCajas + pagosMovimientos[i].cajas;
+              totalKgCong = totalKgCong + pagosMovimientos[i].kgCong;
+            }
+            totalImporte = formatNumberToCurrency(calcImportes - calcPagos);
+
+            arr.push(data);
+
+            let len = i + 1;
+
+            if (
+              pagosMovimientos[i].cliente !== pagosMovimientos[len]?.cliente
+            ) {
+              arr.push({
+                importe: "Importe total",
+                monto: "del Período:",
+                saldo: {
+                  label: totalImporte,
+                  options: {
+                    fontFamily: "Courier-Bold",
+                  },
+                },
+              });
+              arr.push({ cliente: "fin" });
+            }
+          }
+
+          doc.pipe(fs.createWriteStream("Exported/ListadoEntreFechas.pdf"));
+          res.setHeader("Content-type", "application/pdf");
+          doc.pipe(res);
+
+          doc
+            .fontSize(20)
+            .font("Courier-BoldOblique")
+            .text("Transporte Zoe")
+            .moveDown();
+          doc.rect(17, 12, 175, 30).strokeColor("grey").stroke();
+
+          doc
+            .fontSize(15)
+            .font("Courier-BoldOblique")
+            .text(`Resumen entre fechas: ${desde} - ${hasta}`)
+            .moveDown();
+
+          doc
+            .fontSize(11)
+            .font("Courier-BoldOblique")
+            .text(`Fecha de emisión: ${emision}`)
+            .moveDown();
+
+          const table = {
+            headers: [
+              {
+                label: "Codigo",
+                property: "cliente",
+                valign: "center",
+                align: "center",
+                width: 65,
+              },
+              {
+                label: "Fecha",
+                property: "fecha",
+                valign: "center",
+                align: "center",
+                width: 60,
+              },
+              {
+                label: "Concepto",
+                property: "concepto",
+                valign: "center",
+                align: "center",
+                width: 170,
+              },
+              {
+                label: "Debe",
+                property: "importe",
+                valign: "center",
+                align: "center",
+                width: 80,
+              },
+              {
+                label: "Haber",
+                property: "monto",
+                valign: "center",
+                align: "center",
+                width: 80,
+              },
+
+              {
+                label: "Saldo",
+                property: "saldo",
+                valign: "center",
+                align: "center",
+                width: 100,
+              },
+            ],
+            datas: arr,
+          };
+
+          const options = {
+            x: 0,
+            rowSpacing: 10,
+            colSpacing: 10,
+            minRowHeight: 25,
+            // functions
+            prepareHeader: () => doc.font("Courier-Bold").fontSize(11),
+            prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+              doc.font("Courier").fontSize(10),
+                row.monto !== "-" && doc.addBackground(rectRow, "grey", 0.02);
+              row.cliente === "fin" && doc.addBackground(rectRow, "white", 1);
+              indexRow % 2 !== 0 && doc.addBackground(rectRow, "grey", 0.005);
+            },
+          };
+
+          const callback = () => {};
+          doc.table(table, options, callback); */
+
+          /*       doc.end(); */
+        })
+        .catch((err) => {
+          console.error(err);
+        });
     } catch (e) {
       next(e);
     }

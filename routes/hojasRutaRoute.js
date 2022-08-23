@@ -2,10 +2,14 @@ var express = require("express");
 var router = express.Router();
 const hojasRutaController = require("../controllers/hojasRutaController");
 
+router.post("/betweenDates", hojasRutaController.betweenDates);
 router.get("/", hojasRutaController.getAll);
 router.post("/add", hojasRutaController.create);
 router.get("/getByDate/:date", hojasRutaController.getByDate);
 router.put("/:id", hojasRutaController.modificar);
+
+router.post("/create-pdf", hojasRutaController.createPdf);
+router.get("/get-pdf/:date", hojasRutaController.getPdf);
 
 /* router.get("/countEvents", eventsController.amount);
 router.get("/byId/:id", eventsController.getById);

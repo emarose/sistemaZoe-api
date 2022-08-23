@@ -6,6 +6,7 @@ const reportes = require("../controllers/reportesController");
 router.post("/entrefechas", reportes.entrefechas);
 router.post("/entrefechasTodos", reportes.entrefechasTodos);
 router.post("/resumenHoja", reportes.resumenHoja);
+router.post("/resumenHojasEntreFechas", reportes.resumenHojasEntreFechas);
 
 /* router.post("/getByCode/:code", reports.getOrderByCode); */
 
