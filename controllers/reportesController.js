@@ -53,6 +53,8 @@ module.exports = {
 
       const findCC = await cuentasCorrientesModel.find({ _id: CC_id });
 
+      console.log(findCC[0].saldo_currency);
+
       const pagosMovimientos = [...findPagos, ...findMovements];
 
       if (pagosMovimientos.length !== 0) {
@@ -258,14 +260,14 @@ module.exports = {
 
         doc.end();
       } else {
-        res.status(205).send("nohay");
+        res.status(205).send("sin datos");
       }
     } catch (e) {
       next(e);
     }
   },
   entrefechasTodos: async function (req, res, next) {
-    const { initDate, endDate, clientes } = req.body.data;
+    const { initDate, endDate } = req.body.data;
 
     const emision = formatDateString(new Date());
 
