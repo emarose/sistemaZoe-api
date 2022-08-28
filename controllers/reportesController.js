@@ -13,7 +13,6 @@ const fs = require("fs");
 module.exports = {
   entrefechas: async function (req, res, next) {
     const { initDate, endDate, codigo, CC_id } = req.body.data;
-    console.log(req.body.data);
     const emision = formatDateString(new Date());
 
     const fechaInicio = new Date(initDate);
@@ -41,7 +40,6 @@ module.exports = {
           cliente: codigo,
         })
         .sort({ _id: -1 });
-      /*  console.log("Movimientos:", findMovements); */
 
       const findPagos = await pagosModel
         .find({
@@ -52,197 +50,216 @@ module.exports = {
           cliente: codigo,
         })
         .sort({ _id: -1 });
-      /*  console.log("Pagos:", findPagos); */
 
       const findCC = await cuentasCorrientesModel.find({ _id: CC_id });
 
       const pagosMovimientos = [...findPagos, ...findMovements];
 
-      let arr = [];
+      if (pagosMovimientos.length !== 0) {
+        let arr = [];
 
-      let cajas;
-      let kgCong;
-      let totalImporte = 0;
-      let totalCajas = 0;
-      let totalKgCong = 0;
-      let calcImportes = 0;
-      let calcPagos = 0;
+        let cajas;
+        let kgCong;
+        let totalImporte = 0;
+        let totalCajas = 0;
+        let totalKgCong = 0;
+        let calcImportes = 0;
+        let calcPagos = 0;
 
-      for (let i = 0; i < pagosMovimientos.length; i++) {
-        !pagosMovimientos[i].cajas
-          ? (cajas = "")
-          : (cajas = `${pagosMovimientos[i].cajas} Cajas \n`);
+        for (let i = 0; i < pagosMovimientos.length; i++) {
+          !pagosMovimientos[i].cajas
+            ? (cajas = "")
+            : (cajas = `${pagosMovimientos[i].cajas} Cajas \n`);
 
-        !pagosMovimientos[i].kgCong
-          ? (kgCong = "")
-          : (kgCong = `${pagosMovimientos[i].kgCong} Kg. Congelado\n`);
+          !pagosMovimientos[i].kgCong
+            ? (kgCong = "")
+            : (kgCong = `${pagosMovimientos[i].kgCong} Kg. Congelado\n`);
 
-        if (!pagosMovimientos[i].importe) {
-          //PAGOS
-          data = {
-            cliente: pagosMovimientos[i].cliente.toUpperCase(),
-            fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
-            concepto: pagosMovimientos[i].concepto.toUpperCase(),
-            importe: "­",
-            monto: formatNumberToCurrency(pagosMovimientos[i].monto),
+          if (!pagosMovimientos[i].importe) {
+            //PAGOS
+            data = {
+              cliente: pagosMovimientos[i].cliente.toUpperCase(),
+              fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
+              concepto: pagosMovimientos[i].concepto.toUpperCase(),
+              importe: "­",
+              monto: formatNumberToCurrency(pagosMovimientos[i].monto),
 
-            saldo: pagosMovimientos[i].saldo_actual_currency,
-          };
-          calcPagos = calcPagos + pagosMovimientos[i].monto;
-        } else {
-          //MOVIMIENTOS
-          data = {
-            cliente: pagosMovimientos[i].cliente.toUpperCase(),
-            fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
-            concepto: `${cajas}${kgCong}Planta: ${pagosMovimientos[
-              i
-            ].planta.toUpperCase()}\nVehículo: ${pagosMovimientos[
-              i
-            ].vehiculo.toUpperCase()}`,
-            totalKg: pagosMovimientos[i].saldo_anterior_currency,
-            importe: formatNumberToCurrency(pagosMovimientos[i].importe), //DEBE
-            monto: "-", //HABER
-            saldo: pagosMovimientos[i].saldo_actual_currency,
-          };
+              saldo: pagosMovimientos[i].saldo_actual_currency,
+            };
+            calcPagos = calcPagos + pagosMovimientos[i].monto;
+          } else {
+            //MOVIMIENTOS
 
-          calcImportes = calcImportes + pagosMovimientos[i].importe;
-          totalCajas = totalCajas + pagosMovimientos[i].cajas;
-          totalKgCong = totalKgCong + pagosMovimientos[i].kgCong;
+            let concepto = "";
+
+            if (pagosMovimientos[i].vehiculo !== "-") {
+              concepto = `${cajas}${kgCong}Planta: ${pagosMovimientos[
+                i
+              ].planta.toUpperCase()}\nVehículo: ${pagosMovimientos[
+                i
+              ].vehiculo.toUpperCase()}`;
+            } else {
+              concepto = pagosMovimientos[i].planta.toUpperCase();
+            }
+
+            data = {
+              cliente: pagosMovimientos[i].cliente.toUpperCase(),
+              fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
+              concepto: concepto,
+              totalKg: pagosMovimientos[i].saldo_anterior_currency,
+              importe: formatNumberToCurrency(pagosMovimientos[i].importe), //DEBE
+              monto: "-", //HABER
+              saldo: pagosMovimientos[i].saldo_actual_currency,
+            };
+
+            calcImportes = calcImportes + pagosMovimientos[i].importe;
+            totalCajas = totalCajas + pagosMovimientos[i].cajas;
+            totalKgCong = totalKgCong + pagosMovimientos[i].kgCong;
+          }
+
+          totalImporte = formatNumberToCurrency(calcImportes - calcPagos);
+          arr.push(data);
         }
 
-        totalImporte = formatNumberToCurrency(calcImportes - calcPagos);
-        arr.push(data);
+        const ordered = [...arr].sort((a, b) => (a.fecha > b.fecha ? 1 : -1));
+
+        ordered.push({
+          monto: "Saldo período:",
+          saldo: {
+            label: totalImporte,
+            options: { fontFamily: "Courier-Bold" },
+          },
+        });
+
+        /* COMIENZO DOCUMENTO PDF */
+        const doc = new PDFDocumentTable({
+          margin: 20,
+          size: "A4",
+        });
+
+        doc.pipe(fs.createWriteStream("Exported/ListadoEntreFechas.pdf"));
+        res.setHeader("Content-type", "application/pdf");
+        doc.pipe(res);
+        /* titulo */
+        doc
+          .fontSize(20)
+          .font("Courier-BoldOblique")
+          .text("Transporte Zoe")
+          .moveDown();
+        doc.rect(17, 12, 175, 30).strokeColor("grey").stroke();
+
+        const table = {
+          title: `Resumen entre fechas:  ${desde} - ${hasta}`,
+          subtitle: `Fecha de emisión:  ${emision}`,
+          headers: [
+            {
+              label: "Nombre",
+              property: "cliente",
+              valign: "center",
+              align: "center",
+              width: 65,
+            },
+            {
+              label: "Fecha",
+              property: "fecha",
+              valign: "center",
+              align: "center",
+              width: 60,
+            },
+            {
+              label: "Concepto",
+              property: "concepto",
+              valign: "center",
+              align: "center",
+              width: 170,
+            },
+            {
+              label: "Debe",
+              property: "importe",
+              valign: "center",
+              align: "center",
+              width: 80,
+            },
+            {
+              label: "Haber",
+              property: "monto",
+              valign: "center",
+              align: "center",
+              width: 80,
+            },
+
+            {
+              label: "Saldo",
+              property: "saldo",
+              valign: "center",
+              align: "center",
+              width: 100,
+            },
+          ],
+          datas: ordered,
+        };
+
+        const options = {
+          // {Number} default: undefined // A4 595.28 x 841.89 (portrait) (about width sizes)
+          x: 0, // {Number} default: undefined | doc.x
+          rowSpacing: 10,
+          colSpacing: 10,
+          minRowHeight: 25,
+
+          // functions
+          prepareHeader: () => doc.font("Courier-Bold").fontSize(10), // {Function}
+          prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+            doc.font("Courier").fontSize(10), console.log(row.monto);
+            row.monto !== "-" && row.monto !== "Saldo período:"
+              ? doc.addBackground(rectRow, "grey", 0.03)
+              : null;
+
+            indexRow % 2 !== 0 && doc.addBackground(rectRow, "grey", 0.005);
+          },
+        };
+        const callback = () => {};
+        doc.table(table, options, callback);
+
+        doc
+          .moveDown(2)
+          .fontSize(11)
+          .font("Courier-Bold")
+          .text("Datos del período");
+
+        doc
+          .moveDown()
+          .fontSize(10)
+          .font("Courier")
+          .text("Cantidad de cajas: ", { continued: true })
+          .font("Courier-Bold")
+          .text(totalCajas);
+
+        doc
+          .moveDown()
+          .fontSize(10)
+          .font("Courier")
+          .text("Kg de congelado: ", { continued: true })
+          .font("Courier-Bold")
+          .text(totalKgCong);
+        doc
+          .moveDown()
+          .fontSize(10)
+          .font("Courier")
+          .text("Importe del período: ", { continued: true })
+          .font("Courier-Bold")
+          .text(totalImporte);
+        doc
+          .moveDown(2)
+          .fontSize(10)
+          .font("Courier")
+          .text("Saldo Actual del cliente: ", { continued: true })
+          .font("Courier-Bold")
+          .text(findCC[0].saldo_currency);
+
+        doc.end();
+      } else {
+        res.status(205).send("nohay");
       }
-
-      const ordered = [...arr].sort((a, b) => (a.fecha > b.fecha ? 1 : -1));
-
-      ordered.push({
-        monto: "Saldo período:",
-        saldo: {
-          label: totalImporte,
-          options: { fontFamily: "Courier-Bold" },
-        },
-      });
-
-      /* COMIENZO DOCUMENTO PDF */
-      const doc = new PDFDocumentTable({
-        margin: 20,
-        size: "A4",
-      });
-
-      doc.pipe(fs.createWriteStream("Exported/ListadoEntreFechas.pdf"));
-      res.setHeader("Content-type", "application/pdf");
-      doc.pipe(res);
-      /* titulo */
-      doc
-        .fontSize(20)
-        .font("Courier-BoldOblique")
-        .text("Transporte Zoe")
-        .moveDown();
-      doc.rect(17, 12, 175, 30).strokeColor("grey").stroke();
-
-      const table = {
-        title: `Resumen entre fechas:  ${desde} - ${hasta}`,
-        subtitle: `Fecha de emisión:  ${emision}`,
-        headers: [
-          {
-            label: "Nombre",
-            property: "cliente",
-            valign: "center",
-            align: "center",
-            width: 65,
-          },
-          {
-            label: "Fecha",
-            property: "fecha",
-            valign: "center",
-            align: "center",
-            width: 60,
-          },
-          {
-            label: "Concepto",
-            property: "concepto",
-            valign: "center",
-            align: "center",
-            width: 170,
-          },
-          {
-            label: "Debe",
-            property: "importe",
-            valign: "center",
-            align: "center",
-            width: 80,
-          },
-          {
-            label: "Haber",
-            property: "monto",
-            valign: "center",
-            align: "center",
-            width: 80,
-          },
-
-          {
-            label: "Saldo",
-            property: "saldo",
-            valign: "center",
-            align: "center",
-            width: 100,
-          },
-        ],
-        datas: ordered,
-      };
-
-      const options = {
-        // {Number} default: undefined // A4 595.28 x 841.89 (portrait) (about width sizes)
-        x: 0, // {Number} default: undefined | doc.x
-        rowSpacing: 10,
-        colSpacing: 10,
-        minRowHeight: 25,
-
-        // functions
-        prepareHeader: () => doc.font("Courier-Bold").fontSize(10), // {Function}
-        prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
-          doc.font("Courier").fontSize(10), console.log(row.monto);
-          row.monto !== "-" && row.monto !== "Saldo período:"
-            ? doc.addBackground(rectRow, "grey", 0.02)
-            : null;
-
-          indexRow % 2 !== 0 && doc.addBackground(rectRow, "grey", 0.005);
-        },
-      };
-      const callback = () => {};
-      doc.table(table, options, callback);
-
-      doc
-        .moveDown(2)
-        .fontSize(11)
-        .font("Courier-Bold")
-        .text("Datos del período");
-
-      doc
-        .moveDown()
-        .fontSize(10)
-        .font("Courier")
-        .text("Cantidad de cajas: ", { continued: true })
-        .font("Courier-Bold")
-        .text(totalCajas);
-
-      doc
-        .moveDown()
-        .fontSize(10)
-        .font("Courier")
-        .text("Kg de congelado: ", { continued: true })
-        .font("Courier-Bold")
-        .text(totalKgCong);
-      doc
-        .moveDown()
-        .fontSize(10)
-        .font("Courier")
-        .text("Importe del período: ", { continued: true })
-        .font("Courier-Bold")
-        .text(totalImporte);
-
-      doc.end();
     } catch (e) {
       next(e);
     }

@@ -36,6 +36,36 @@ module.exports = {
       next(e);
     }
   },
+  addNuevoMovimiento: async function (req, res, next) {
+    const fecha = new Date(req.body.fecha);
+    fecha.setHours(4);
+    fecha.setMinutes(0);
+    fecha.setMilliseconds(0);
+    fecha.setSeconds(0);
+
+    try {
+      const data = new movimientosModel({
+        cliente: req.body.cliente,
+        planta: req.body.concepto,
+        fecha: fecha,
+        vehiculo: "-",
+        cajas: 0,
+        kgCong: 0,
+        precioFresco: 0,
+        precioCongelado: 0,
+        importe: parseFloat(req.body.importe),
+        saldo_actual: req.body.saldo_anterior + parseFloat(req.body.importe),
+        saldo_anterior: req.body.saldo_anterior,
+      });
+      const document = await data.save();
+
+      res.status(201).json(document);
+    } catch (e) {
+      console.log(e);
+      e.status = 400;
+      next(e);
+    }
+  },
   getAll: async function (req, res, next) {
     try {
       const movs = await movimientosModel.find();
@@ -62,6 +92,7 @@ module.exports = {
       next(e);
     }
   },
+
   betweenDates: async function (req, res, next) {
     const { initDate, endDate, codigo } = req.body.data;
 
@@ -120,6 +151,7 @@ module.exports = {
     }
   },
   getByName: async function (req, res, next) {
+    console.log(req.params.name);
     try {
       const documents = await movimientosModel.find({
         cliente: req.params.name,

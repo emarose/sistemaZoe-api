@@ -1,4 +1,5 @@
 const titularesModel = require("../models/titularesModel");
+const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
 
 module.exports = {
   create: async function (req, res, next) {
@@ -13,9 +14,17 @@ module.exports = {
 
       const response = await document.save();
 
-      res.json(response);
+      const doc = new cuentasCorrientesModel({
+        titular_id: response._id,
+        debe: 0,
+        haber: 0,
+        isActive: true,
+      });
+
+      const save = await doc.save();
+
+      res.json(save);
     } catch (e) {
-      e.status = 400;
       console.log(e);
       next(e);
     }

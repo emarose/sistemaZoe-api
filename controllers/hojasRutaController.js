@@ -23,7 +23,6 @@ module.exports = {
     }
   },
   create: async function (req, res, next) {
-    console.log(req.body);
     const fecha = new Date(req.body.fecha);
     fecha.setHours(4);
     fecha.setMinutes(0);
@@ -42,9 +41,10 @@ module.exports = {
 
       res.json(response);
     } catch (e) {
-      /*    res.status=400
-      e.status=400 */
-      next(e);
+      console.log(e);
+
+      res.status(555);
+      res.send("hoja duplicada");
     }
   },
   getByDate: async function (req, res, next) {
@@ -95,8 +95,7 @@ module.exports = {
   },
   modificar: async function (req, res, next) {
     console.log("BODY:", req.body, "PARAMS:", req.params);
-
-    /*  try {
+    /* try {
       const update = await eventsModel.updateOne(
         { code: req.params.code },
         { $push: { orders: req.body.orders } },
@@ -108,7 +107,21 @@ module.exports = {
     } catch (e) {
       console.log(e);
       next(e);
-    } */
+    }  */
+  },
+  eliminar: async function (req, res, next) {
+    const fecha = new Date(req.params.date);
+    fecha.setHours(4);
+    fecha.setMinutes(0);
+    fecha.setMilliseconds(0);
+    fecha.setSeconds(0);
+    console.log(fecha);
+    try {
+      const deleted = await hojasRutaModel.deleteOne({ fecha: fecha });
+      res.json(deleted);
+    } catch (e) {
+      next(e);
+    }
   },
   createPdf: async function (req, res, next) {
     const fecha = new Date(req.body.data);

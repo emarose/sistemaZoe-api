@@ -7,6 +7,7 @@ router.get("/", hojasRutaController.getAll);
 router.post("/add", hojasRutaController.create);
 router.get("/getByDate/:date", hojasRutaController.getByDate);
 router.put("/:id", hojasRutaController.modificar);
+router.delete("/remove/:date", hojasRutaController.eliminar);
 
 router.post("/create-pdf", hojasRutaController.createPdf);
 router.get("/get-pdf/:date", hojasRutaController.getPdf);
