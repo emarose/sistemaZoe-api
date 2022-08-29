@@ -12,25 +12,31 @@ const fs = require("fs");
 
 module.exports = {
   entrefechas: async function (req, res, next) {
-    const { initDate, endDate, codigo, CC_id } = req.body.data;
+    const { initDate, endDate, codigo } = req.body.data;
     const emision = formatDateString(new Date());
 
     const fechaInicio = new Date(initDate);
-    fechaInicio.setHours(4);
+    fechaInicio.setHours(-3);
     fechaInicio.setMinutes(0);
     fechaInicio.setMilliseconds(0);
     fechaInicio.setSeconds(0);
 
     const fechaFin = new Date(endDate);
-    fechaFin.setHours(8);
+    fechaFin.setHours(24);
     fechaFin.setMinutes(0);
     fechaFin.setMilliseconds(0);
     fechaFin.setSeconds(0);
+
+    console.log(fechaInicio, fechaFin);
 
     const desde = moment(fechaInicio).format("DD/MM/YYYY");
     const hasta = moment(fechaFin).format("DD/MM/YYYY");
 
     try {
+      const findTitulares = await titularesModel.find({
+        codigo: codigo,
+      });
+
       const findMovements = await movimientosModel
         .find({
           fecha: {
@@ -47,13 +53,13 @@ module.exports = {
             $gte: new Date(initDate),
             $lte: new Date(endDate),
           },
-          cliente: codigo,
+          cliente: findTitulares[0].codigo,
         })
         .sort({ _id: -1 });
 
-      const findCC = await cuentasCorrientesModel.find({ _id: CC_id });
-
-      console.log(findCC[0].saldo_currency);
+      const findCC = await cuentasCorrientesModel.find({
+        titular_id: findTitulares[0]._id,
+      });
 
       const pagosMovimientos = [...findPagos, ...findMovements];
 
@@ -91,7 +97,6 @@ module.exports = {
             calcPagos = calcPagos + pagosMovimientos[i].monto;
           } else {
             //MOVIMIENTOS
-
             let concepto = "";
 
             if (pagosMovimientos[i].vehiculo !== "-") {
@@ -211,7 +216,7 @@ module.exports = {
           // functions
           prepareHeader: () => doc.font("Courier-Bold").fontSize(10), // {Function}
           prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
-            doc.font("Courier").fontSize(10), console.log(row.monto);
+            doc.font("Courier").fontSize(10);
             row.monto !== "-" && row.monto !== "Saldo período:"
               ? doc.addBackground(rectRow, "grey", 0.03)
               : null;
