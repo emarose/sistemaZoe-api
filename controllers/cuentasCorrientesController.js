@@ -3,10 +3,30 @@ const titularesModel = require("../models/titularesModel");
 
 module.exports = {
   getAll: async function (req, res, next) {
+    const page = req.query.page;
+    const perPage = 10;
     try {
-      const document = await cuentasCorrientesModel.find();
+      // busco la cantidad de documentos
+      const totalDocuments = await cuentasCorrientesModel
+        .find()
+        .countDocuments();
 
-      res.json(document);
+      // busco los documentos, limitados
+      const documentsFound = await cuentasCorrientesModel
+        .find()
+        .limit(perPage)
+        .skip(parseInt(page) * perPage);
+
+      let documentLenght = parseInt(Object.values(documentsFound).length);
+
+      // divido el total de documentos por la cantidad que quiero traer por página
+      let ultimaPagina = Math.ceil(totalDocuments / perPage);
+
+      console.log("cantidad de documentos por pagina:", documentLenght);
+      console.log("ultima pagina:", ultimaPagina);
+
+      // devuelvo los documentos encontrados y la ultima pagina
+      res.json([documentsFound, ultimaPagina]);
     } catch (e) {
       next(e);
     }
