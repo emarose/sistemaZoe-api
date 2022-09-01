@@ -16,11 +16,8 @@ var reportesRouter = require("./routes/reportesRoute");
 var app = express();
 var cors = require("cors");
 
-/* var baseUrl = process.env.baseURL || "http://localhost:3000";
- */
-
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({ origin: "*" }));
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
