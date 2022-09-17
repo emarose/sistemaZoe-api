@@ -2,7 +2,7 @@ var express = require("express");
 var router = express.Router();
 const hojasRutaController = require("../controllers/hojasRutaController");
 
-router.post("/betweenDates", hojasRutaController.betweenDates);
+router.get("/betweenDates", hojasRutaController.betweenDates);
 router.get("/", hojasRutaController.getAll);
 router.post("/add", hojasRutaController.create);
 router.get("/getByDate/:date", hojasRutaController.getByDate);

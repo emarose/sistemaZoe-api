@@ -1,10 +1,12 @@
 const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
+const pagosModel = require("../models/pagosModel");
+const movimientosModel = require("../models/movimientosModel");
 const titularesModel = require("../models/titularesModel");
 
 module.exports = {
   getAll: async function (req, res, next) {
     const page = req.query.page;
-    const perPage = 10;
+    const perPage = req.query.limit;
     try {
       // busco la cantidad de documentos
       const totalDocuments = await cuentasCorrientesModel
@@ -17,13 +19,8 @@ module.exports = {
         .limit(perPage)
         .skip(parseInt(page) * perPage);
 
-      let documentLenght = parseInt(Object.values(documentsFound).length);
-
       // divido el total de documentos por la cantidad que quiero traer por página
       let ultimaPagina = Math.ceil(totalDocuments / perPage);
-
-      console.log("cantidad de documentos por pagina:", documentLenght);
-      console.log("ultima pagina:", ultimaPagina);
 
       // devuelvo los documentos encontrados y la ultima pagina
       res.json([documentsFound, ultimaPagina]);
@@ -50,16 +47,16 @@ module.exports = {
     }
   },
   getByName: async function (req, res, next) {
-    const codigo = req.params.name;
+    const name = req.params.name;
+
     try {
       const titular = await titularesModel.find({
-        codigo: codigo,
+        codigo: name,
       });
-
-      const id = titular[0]._id;
+      console.log(titular);
 
       const document = await cuentasCorrientesModel.find({
-        titular_id: id,
+        titular_id: titular[0]._id,
       });
 
       res.json(document[0]);
@@ -122,6 +119,48 @@ module.exports = {
       );
       console.log(document);
       res.json(`Restados ${monto} al debe.`);
+    } catch (e) {
+      next(e);
+    }
+  },
+  getMovimientosYPagos: async function (req, res, next) {
+    const cliente = req.params.name;
+    const page = req.query.page;
+    const perPage = req.query.limit;
+
+    try {
+      // busco la cantidad de documentos
+      const pagosDocuments = await pagosModel
+        .find({ cliente: cliente })
+        .countDocuments();
+
+      const movimientosDocuments = await movimientosModel
+        .find({ cliente: cliente })
+        .countDocuments();
+
+      let totalDocuments = movimientosDocuments + pagosDocuments;
+
+      const movimientos = await movimientosModel
+        .find({ cliente: cliente })
+        .sort({ _id: -1 })
+        .limit(perPage)
+        .skip(parseInt(page) * perPage);
+
+      const pagos = await pagosModel
+        .find({ cliente: cliente })
+        .limit(perPage)
+        .sort({ _id: -1 })
+        .skip(parseInt(page) * perPage);
+
+      let pagosYdocumentos = [...pagos, ...movimientos];
+
+      const ordered = [...pagosYdocumentos].sort((a, b) =>
+        a.fecha < b.fecha ? -1 : 1
+      );
+
+      let ultimaPagina = Math.ceil(totalDocuments / perPage);
+
+      res.json([ordered, ultimaPagina]);
     } catch (e) {
       next(e);
     }

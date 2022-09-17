@@ -75,7 +75,36 @@ module.exports = {
     }
   },
   byDate: async function (req, res, next) {
+    const page = req.query.page || 0;
+    const perPage = req.query.limit;
+
     const fecha = new Date(req.body.fecha);
+    fecha.setHours(4);
+    fecha.setMinutes(0);
+    fecha.setMilliseconds(0);
+    fecha.setSeconds(0);
+
+    try {
+      const totalDocuments = await titularesModel.find().countDocuments();
+
+      const documents = await movimientosModel
+        .find({
+          fecha: fecha,
+        })
+        .limit(perPage)
+        .skip(parseInt(page) * perPage);
+
+      // divido el total de documentos por la cantidad que quiero traer por página
+      let ultimaPagina = Math.ceil(totalDocuments / perPage);
+
+      // devuelvo los documentos encontrados y la ultima pagina
+
+      res.json([documents, ultimaPagina]);
+    } catch (e) {
+      next(e);
+    }
+
+    /*  const fecha = new Date(req.body.fecha);
     fecha.setHours(4);
     fecha.setMinutes(0);
     fecha.setMilliseconds(0);
@@ -90,7 +119,7 @@ module.exports = {
       res.json(documents);
     } catch (e) {
       next(e);
-    }
+    } */
   },
 
   betweenDates: async function (req, res, next) {
@@ -144,21 +173,33 @@ module.exports = {
           $lte: fechaFin,
         },
       });
-
+      console.log(documents);
       res.json(documents);
     } catch (e) {
       next(e);
     }
   },
   getByName: async function (req, res, next) {
-    console.log(req.params.name);
+    const page = req.query.page || 0;
+    const perPage = 10;
     try {
-      const documents = await movimientosModel.find({
-        cliente: req.params.name,
-      });
-      res.json(documents);
+      const totalDocuments = await titularesModel.find().countDocuments();
 
-      /*  console.log(documents); */
+      const documents = await movimientosModel
+        .find({
+          cliente: req.params.name,
+        })
+        .limit(perPage)
+        .skip(parseInt(page) * perPage);
+
+      let documentLenght = parseInt(Object.values(documents).length);
+
+      // divido el total de documentos por la cantidad que quiero traer por página
+      let ultimaPagina = Math.ceil(totalDocuments / perPage);
+
+      // devuelvo los documentos encontrados y la ultima pagina
+
+      res.json([documents, ultimaPagina]);
     } catch (e) {
       next(e);
     }
@@ -199,47 +240,4 @@ module.exports = {
       console.log(e);
     }
   },
-  /*  
-  getById: async function (req, res, next) {
-   
-    try {
-      const documents = await productsModel.findById(req.params.id);
-      res.json(documents);
-    } catch (e) {
-      next(e);
-    }
-  },
-  
-  update: async function (req, res, next) {
-    console.log(req.body[0].searchField);
-
-    try {
-      const doc = await productsModel.findOne({ _id: req.params.id });
-      const update = { [req.body[0].searchField]: req.body[0].update };
-      await doc.updateOne(update);
-
-      res.json(doc);
-    } catch (e) {
-      console.log(e);
-    }
-  },
-  delete: async function (req, res, next) {
-    try {
-      console.log(req.body);
-      const deleted = await productsModel.deleteOne({ _id: req.params.id });
-      res.json(deleted);
-    } catch (e) {
-      next(e);
-    }
-  },
-  amount: async function (req, res, next) {
-    try {
-      const amount = await productsModel.find({}).sort({ code: -1 }).limit(1);
-
-      amount[0] ? res.json(amount[0].code) : res.json(0);
-    } catch (e) {
-      console.log(e);
-      next(e);
-    }
-  }, */
 };

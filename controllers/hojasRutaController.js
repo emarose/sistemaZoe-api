@@ -5,12 +5,8 @@ const { formatNumberToCurrency } = require("../util/utils");
 
 var path = require("path");
 
-//Required package
 const pdf = require("pdf-creator-node");
 var fs = require("fs");
-
-// Read HTML Template
-var html = fs.readFileSync(`${__dirname}/template.html`, "utf8");
 
 module.exports = {
   getAll: async function (req, res, next) {
@@ -36,6 +32,7 @@ module.exports = {
         cajasTotal: req.body.cajasTotal,
         kgTotal: req.body.kgTotal,
       });
+      console.log(document);
 
       const response = await document.save();
 
@@ -65,7 +62,8 @@ module.exports = {
     }
   },
   betweenDates: async function (req, res, next) {
-    const { initDate, endDate } = req.body.data;
+    const { initDate, endDate } = req.query;
+    console.log(req.query);
 
     const fechaInicio = new Date(initDate);
     fechaInicio.setHours(4);
@@ -88,6 +86,7 @@ module.exports = {
         },
       });
 
+      console.log(documents);
       res.json(documents);
     } catch (e) {
       next(e);

@@ -678,11 +678,7 @@ module.exports = {
       const callback = () => {};
       doc.table(table, options, callback);
 
-      doc
-        .moveDown(2)
-        .fontSize(11)
-        .font("Courier-Bold")
-        .text("Datos del período");
+      doc.moveDown(2).fontSize(11).font("Courier-Bold").text("Resumen de hoja");
 
       doc
         .moveDown()
@@ -703,7 +699,7 @@ module.exports = {
         .moveDown()
         .fontSize(10)
         .font("Courier")
-        .text("Importe del período: ", { continued: true })
+        .text("Importe total: ", { continued: true })
         .font("Courier-Bold")
         .text(findHojaRuta[0].importeTotal_currency);
 
