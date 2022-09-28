@@ -76,7 +76,7 @@ module.exports = {
   },
   byDate: async function (req, res, next) {
     const page = req.query.page || 0;
-    const perPage = req.query.limit;
+    const perPage = req.query.limit || 100;
 
     const fecha = new Date(req.body.fecha);
     fecha.setHours(4);
@@ -121,7 +121,6 @@ module.exports = {
       next(e);
     } */
   },
-
   betweenDates: async function (req, res, next) {
     const { initDate, endDate, codigo } = req.body.data;
 

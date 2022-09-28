@@ -20,6 +20,7 @@ module.exports = {
   },
   create: async function (req, res, next) {
     const fecha = new Date(req.body.fecha);
+
     fecha.setHours(4);
     fecha.setMinutes(0);
     fecha.setMilliseconds(0);

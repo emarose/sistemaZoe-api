@@ -40,7 +40,7 @@ module.exports = {
   getAll: async function (req, res, next) {
     const page = req.query.page;
     const perPage = req.query.limit;
-    console.log(page, perPage);
+
     try {
       // busco la cantidad de documentos
       const totalDocuments = await titularesModel.find().countDocuments();
@@ -58,6 +58,27 @@ module.exports = {
       res.json([documentsFound, ultimaPagina]);
     } catch (e) {
       next(e);
+    }
+  },
+  modificar: async function (req, res, next) {
+    const updateData = Object.fromEntries(
+      Object.entries(req.body).filter(([_, v]) => v != "")
+    );
+
+    try {
+      console.log(updateData);
+
+      const doc = await titularesModel.findOneAndUpdate(
+        { _id: req.query.titularId },
+        updateData,
+        {
+          new: true,
+        }
+      );
+
+      res.json(doc);
+    } catch (e) {
+      console.log(e);
     }
   },
 };
