@@ -7,7 +7,6 @@ var logger = require("morgan");
 require("dotenv").config();
 
 var titularesRouter = require("./routes/titularesRoute");
-var vehiculosRouter = require("./routes/vehiculosRoute");
 var movimientosRouter = require("./routes/movimientosRoute");
 var hojasRutaRouter = require("./routes/hojasRutaRoute");
 var cuentasCorrientesRouter = require("./routes/cuentasCorrientesRoute");
@@ -41,7 +40,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/cuentasCorrientes", cuentasCorrientesRouter);
 app.use("/pagos", pagosRouter);
 app.use("/titulares", titularesRouter);
-app.use("/vehiculos", vehiculosRouter);
+
 app.use("/movimientos", movimientosRouter);
 app.use("/hojasRuta", hojasRutaRouter);
 app.use("/reportes", reportesRouter);

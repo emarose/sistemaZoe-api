@@ -25,6 +25,7 @@ module.exports = {
     fecha.setMinutes(0);
     fecha.setMilliseconds(0);
     fecha.setSeconds(0);
+
     try {
       const document = new hojasRutaModel({
         movimientos: req.body.movimientos,
@@ -33,6 +34,7 @@ module.exports = {
         cajasTotal: req.body.cajasTotal,
         kgTotal: req.body.kgTotal,
       });
+
       console.log(document);
 
       const response = await document.save();
@@ -40,7 +42,6 @@ module.exports = {
       res.json(response);
     } catch (e) {
       console.log(e);
-
       res.status(555);
       res.send("hoja duplicada");
     }
@@ -94,11 +95,19 @@ module.exports = {
     }
   },
   modificar: async function (req, res, next) {
-    console.log("BODY:", req.body, "PARAMS:", req.params);
-    /* try {
-      const update = await eventsModel.updateOne(
-        { code: req.params.code },
-        { $push: { orders: req.body.orders } },
+    const { fecha, movimientos, importeTotal, cajasTotal, kgTotal } = req.body;
+    console.log(cajasTotal);
+    try {
+      const update = await hojasRutaModel.updateOne(
+        { id: req.params.id },
+        {
+          $set: {
+            importeTotal: importeTotal,
+            movimientos: movimientos,
+            cajasTotal: cajasTotal,
+            kgTotal: kgTotal,
+          },
+        },
         { multi: true }
       );
 
@@ -107,7 +116,7 @@ module.exports = {
     } catch (e) {
       console.log(e);
       next(e);
-    }  */
+    }
   },
   eliminar: async function (req, res, next) {
     const fecha = new Date(req.params.date);

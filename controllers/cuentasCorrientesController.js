@@ -85,14 +85,13 @@ module.exports = {
         { _id: cuentaCorriente_id },
         { $inc: { haber: monto } }
       );
-      console.log(document);
+
       res.json(`Agregados ${monto} al haber.`);
     } catch (e) {
       next(e);
     }
   },
   agregarAlDebe: async function (req, res, next) {
-    console.log("AGREGAR AL DEBE:", req.body);
     const cuentaCorriente_id = req.body.cuentaCorriente_id;
     let monto = parseInt(req.body.monto);
 
@@ -101,14 +100,13 @@ module.exports = {
         { _id: cuentaCorriente_id },
         { $inc: { debe: monto } }
       );
-      console.log(document);
+
       res.json(`Agregados ${monto} al debe.`);
     } catch (e) {
       next(e);
     }
   },
   restarDebe: async function (req, res, next) {
-    console.log("RESTAR AL DEBE:", req.body);
     const cuentaCorriente_id = req.body.cuentaCorriente_id;
     let monto = parseInt(req.body.monto);
 
@@ -118,7 +116,6 @@ module.exports = {
         { $inc: { debe: -monto } }
       );
       console.log(document);
-      res.json(`Restados ${monto} al debe.`);
     } catch (e) {
       next(e);
     }

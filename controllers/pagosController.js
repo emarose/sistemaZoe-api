@@ -1,6 +1,7 @@
 const pagosModel = require("../models/pagosModel");
 const movimientosModel = require("../models/movimientosModel");
-
+const titularesModel = require("../models/titularesModel");
+const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
 const formatDateString = require("../util/utils");
 
 module.exports = {
@@ -38,44 +39,52 @@ module.exports = {
     }
   },
   create: async function (req, res, next) {
-    const fecha = new Date(req.body.fecha);
-    fecha.setHours(4);
-    fecha.setMinutes(0);
-    fecha.setMilliseconds(0);
-    fecha.setSeconds(0);
+    const { codigo, concepto, monto, fecha } = req.body.data;
+
+    const formatedFecha = new Date(fecha);
+    formatedFecha.setHours(4);
+    formatedFecha.setMinutes(0);
+    formatedFecha.setMilliseconds(0);
+    formatedFecha.setSeconds(0);
+
+    console.log("BODY::::::::", req.body.data);
 
     const movimientos = await movimientosModel
-      .find({ cliente: req.body.codigo })
-      .sort({ _id: -1 });
+      .find({ cliente: codigo })
+      .sort({ formatedFecha: -1 });
 
-    console.log(movimientos);
-    const pagos = await pagosModel
-      .find({ cliente: req.body.codigo })
-      .sort({ _id: -1 });
+    const titular = await titularesModel
+      .find({ codigo: codigo })
+      .sort({ formatedFecha: -1 });
+
+    console.log(titular[0]._id);
+
+    const cuentaCorriente = await cuentasCorrientesModel
+      .find({ titularId: titular[0]._id })
+      .sort({ formatedFecha: -1 });
+
+    console.log(cuentaCorriente[0]._id);
+
+    const pagos = await pagosModel.find({ cliente: codigo }).sort({ _id: -1 });
 
     const pagosMovimientos = [...movimientos, ...pagos];
-
-    console.log(pagosMovimientos);
 
     const ordered = [...pagosMovimientos].sort((a, b) =>
       a.fecha > b.fecha ? 1 : -1
     );
 
-    console.log(ordered);
-
     const ultimoSaldoActual = ordered.slice(-1)[0].saldo_actual;
 
-    console.log(ultimoSaldoActual);
+    console.log("ULTIMO SALDOA ACTUAL:::", ultimoSaldoActual);
 
-    /*     const saldo_anterior = saldoUltimoMovimientoEnLaFecha; */
     try {
       const document = new pagosModel({
-        cliente: req.body.codigo,
-        monto: req.body.monto,
-        concepto: req.body.concepto,
-        fecha: req.body.fecha,
-        cuentaCorriente_id: req.body.cuentaCorriente_id,
-        saldo_actual: ultimoSaldoActual - req.body.monto,
+        cliente: codigo,
+        monto: monto,
+        concepto: concepto,
+        fecha: formatedFecha,
+        cuentaCorriente_id: cuentaCorriente[0]._id,
+        saldo_actual: ultimoSaldoActual - monto,
         saldo_anterior: ultimoSaldoActual,
       });
 
