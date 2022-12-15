@@ -5,6 +5,8 @@ const pagosController = require("../controllers/pagosController");
 router.get("/", pagosController.getAll);
 router.get("/getByCliente/:cliente", pagosController.getByCliente);
 router.post("/add", pagosController.create);
+router.post("/delete/:id", pagosController.deletePago);
+
 /* 
 router.get("/countInputs", inputsController.amount);
 router.delete("/:id", inputsController.delete);

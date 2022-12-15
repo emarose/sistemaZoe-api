@@ -40,30 +40,26 @@ module.exports = {
   },
   create: async function (req, res, next) {
     const { codigo, concepto, monto, fecha } = req.body.data;
-
     const formatedFecha = new Date(fecha);
     formatedFecha.setHours(4);
     formatedFecha.setMinutes(0);
     formatedFecha.setMilliseconds(0);
     formatedFecha.setSeconds(0);
 
-    console.log("BODY::::::::", req.body.data);
-
     const movimientos = await movimientosModel
       .find({ cliente: codigo })
       .sort({ formatedFecha: -1 });
 
-    const titular = await titularesModel
-      .find({ codigo: codigo })
-      .sort({ formatedFecha: -1 });
-
-    console.log(titular[0]._id);
+    const titular = await titularesModel.find({ codigo: codigo });
 
     const cuentaCorriente = await cuentasCorrientesModel
-      .find({ titularId: titular[0]._id })
+      .find({ titular_id: titular[0]._id })
       .sort({ formatedFecha: -1 });
 
-    console.log(cuentaCorriente[0]._id);
+    const updateHaber = await cuentasCorrientesModel.updateOne(
+      { titular_id: titular[0]._id },
+      { $inc: { haber: parseInt(monto) } }
+    );
 
     const pagos = await pagosModel.find({ cliente: codigo }).sort({ _id: -1 });
 
@@ -73,9 +69,13 @@ module.exports = {
       a.fecha > b.fecha ? 1 : -1
     );
 
-    const ultimoSaldoActual = ordered.slice(-1)[0].saldo_actual;
+    const ultimoSaldoActual = ordered.slice(-1)[0]
+      ? ordered.slice(-1)[0].saldo_actual
+      : 0;
 
-    console.log("ULTIMO SALDOA ACTUAL:::", ultimoSaldoActual);
+    /*  const ultimoSaldoActual = parseInt(
+      cuentaCorriente[0].haber - cuentaCorriente[0].debe
+    ); */
 
     try {
       const document = new pagosModel({
@@ -89,11 +89,38 @@ module.exports = {
       });
 
       const response = await document.save();
-
+      console.log(document);
       res.json(response);
     } catch (e) {
       console.log(e);
 
+      next(e);
+    }
+  },
+  deletePago: async function (req, res, next) {
+    const pagoId = req.params.id;
+    const cliente = req.body.cliente;
+    console.log(pagoId, cliente);
+
+    try {
+      const pago = await pagosModel.find({ _id: pagoId });
+      let monto = pago[0].monto;
+
+      console.log(monto);
+      const titular_id = await titularesModel.find({ codigo: cliente });
+
+      const document = await cuentasCorrientesModel.updateOne(
+        { titular_id: titular_id[0]._id },
+        { $inc: { haber: parseInt(-monto) } }
+      );
+      console.log(document);
+
+      const deleted = await pagosModel.deleteOne({ _id: pagoId });
+
+      console.log(deleted);
+
+      res.json(document);
+    } catch (e) {
       next(e);
     }
   },

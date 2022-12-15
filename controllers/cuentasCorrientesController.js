@@ -107,15 +107,18 @@ module.exports = {
     }
   },
   restarDebe: async function (req, res, next) {
-    const cuentaCorriente_id = req.body.cuentaCorriente_id;
-    let monto = parseInt(req.body.monto);
+    const { codigo, monto } = req.body;
 
+    console.log("restar debe > monto:", monto);
     try {
+      const cliente = await titularesModel.findOne({ codigo: codigo });
+
+      const id_cliente = cliente._id;
       const document = await cuentasCorrientesModel.updateOne(
-        { _id: cuentaCorriente_id },
+        { titular_id: id_cliente },
         { $inc: { debe: -monto } }
       );
-      console.log(document);
+      res.json(`Agregados ${monto} al debe.`);
     } catch (e) {
       next(e);
     }
