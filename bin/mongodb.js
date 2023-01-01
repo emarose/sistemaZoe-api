@@ -1,7 +1,8 @@
 var mongoose = require("mongoose");
 
 const url =
-  "mongodb+srv://emarose:12Metallica12@cluster0.wj35z.mongodb.net/sistemaZoe?retryWrites=true&w=majority";
+  "mongodb://mongo:GsSB4J6uD575Hea4YUJD@containers-us-west-23.railway.app:8068";
+//"mongodb+srv://emarose:12Metallica12@cluster0.wj35z.mongodb.net/sistemaZoe?retryWrites=true&w=majority";
 
 mongoose.connect(
   url,
