@@ -7,9 +7,4 @@ router.get("/", titularesController.getAll);
 router.put("/", titularesController.modificar);
 router.get("/getByName/:name", titularesController.getByName);
 
-/* router.get("/countCustomers", customersController.amount);
-
-router.delete("/:id", customersController.delete);
-router.put("/:id", customersController.update); */
-
 module.exports = router;

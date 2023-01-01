@@ -1,6 +1,5 @@
 const pagosModel = require("../models/pagosModel");
 const movimientosModel = require("../models/movimientosModel");
-const titularesModel = require("../models/titularesModel");
 const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
 const formatDateString = require("../util/utils");
 
@@ -50,7 +49,7 @@ module.exports = {
       .find({ cliente: codigo })
       .sort({ formatedFecha: -1 });
 
-    const titular = await titularesModel.find({ codigo: codigo });
+    const titular = await cuentasCorrientesModel.find({ codigo: codigo });
 
     const cuentaCorriente = await cuentasCorrientesModel
       .find({ titular_id: titular[0]._id })
@@ -107,10 +106,12 @@ module.exports = {
       let monto = pago[0].monto;
 
       console.log(monto);
-      const titular_id = await titularesModel.find({ codigo: cliente });
+      const titular_id = await cuentasCorrientesModel.find({
+        titular: cliente,
+      });
 
       const document = await cuentasCorrientesModel.updateOne(
-        { titular_id: titular_id[0]._id },
+        { titular: cliente },
         { $inc: { haber: parseInt(-monto) } }
       );
       console.log(document);

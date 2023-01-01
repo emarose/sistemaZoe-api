@@ -1,12 +1,10 @@
 const hojasRutaModel = require("../models/hojasRutaModel");
-const pagosModel = require("../models/pagosModel");
 const movimientosModel = require("../models/movimientosModel");
-const titularesModel = require("../models/titularesModel");
 const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
+
 const { formatDateString } = require("../util/utils");
 const { formatNumberToCurrency } = require("../util/utils");
 const PDFDocumentTable = require("pdfkit-table");
-/* const PDFDocument = require("pdfkit"); */
 const moment = require("moment");
 const fs = require("fs");
 
@@ -27,17 +25,15 @@ module.exports = {
     fechaFin.setMilliseconds(0);
     fechaFin.setSeconds(0);
 
-    console.log(fechaInicio, fechaFin);
-
     const desde = moment(fechaInicio).format("DD/MM/YYYY");
     const hasta = moment(fechaFin).format("DD/MM/YYYY");
 
     try {
-      const findTitulares = await titularesModel.find({
-        codigo: codigo,
+      const cuentaCorriente = await cuentasCorrientesModel.findOne({
+        titular: codigo,
       });
 
-      const findMovements = await movimientosModel
+      const dataMovimientos = await movimientosModel
         .find({
           fecha: {
             $gte: fechaInicio,
@@ -45,93 +41,102 @@ module.exports = {
           },
           cliente: codigo,
         })
-        .sort({ _id: -1 });
+        .sort({ fecha: 1 });
 
-      const findPagos = await pagosModel
-        .find({
-          fecha: {
-            $gte: new Date(initDate),
-            $lte: new Date(endDate),
-          },
-          cliente: findTitulares[0].codigo,
-        })
-        .sort({ _id: -1 });
+      const movimientos = JSON.parse(JSON.stringify(dataMovimientos));
 
-      const findCC = await cuentasCorrientesModel.find({
-        titular_id: findTitulares[0]._id,
+      let sumaPagos = 0;
+      let sumaMovimientos = 0;
+      let sumaCongelado = 0;
+      let sumaFresco = 0;
+
+      movimientos.map((movimiento) => {
+        switch (movimiento.tipo) {
+          case "ENTRADA":
+            sumaPagos += movimiento.importe;
+            break;
+          case "SALIDA":
+            sumaCongelado +=
+              cuentaCorriente.precioCongelado * movimiento.kgCong;
+            sumaFresco += cuentaCorriente.precioFresco * movimiento.cajas;
+            if (movimiento.precioCongelado !== 0) {
+              sumaMovimientos = sumaFresco + sumaCongelado;
+            } else {
+              sumaMovimientos += movimiento.importe;
+            }
+            break;
+        }
+        Object.assign(movimiento, { saldo: sumaMovimientos - sumaPagos });
       });
 
-      const pagosMovimientos = [...findPagos, ...findMovements];
-
-      if (pagosMovimientos.length !== 0) {
+      if (movimientos.length !== 0) {
         let arr = [];
+        let data = {};
 
         let cajas;
         let kgCong;
         let totalImporte = 0;
         let totalCajas = 0;
         let totalKgCong = 0;
-        let calcImportes = 0;
-        let calcPagos = 0;
 
-        for (let i = 0; i < pagosMovimientos.length; i++) {
-          !pagosMovimientos[i].cajas
+        movimientos.map((movimiento, i) => {
+          !movimiento.cajas
             ? (cajas = "")
-            : (cajas = `${pagosMovimientos[i].cajas} Cajas \n`);
+            : (cajas = `${
+                movimiento.cajas === 1
+                  ? movimiento.cajas + " Caja"
+                  : movimiento.cajas + " Cajas"
+              }  \n`);
 
-          !pagosMovimientos[i].kgCong
+          !movimiento.kgCong
             ? (kgCong = "")
-            : (kgCong = `${pagosMovimientos[i].kgCong} Kg. Congelado\n`);
+            : (kgCong = `${movimiento.kgCong} Kg. Congelado\n`);
 
-          if (!pagosMovimientos[i].importe) {
-            //PAGOS
-            data = {
-              cliente: pagosMovimientos[i].cliente.toUpperCase(),
-              fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
-              concepto: pagosMovimientos[i].concepto.toUpperCase(),
-              importe: "­",
-              monto: formatNumberToCurrency(pagosMovimientos[i].monto),
+          switch (movimiento.tipo) {
+            case "ENTRADA":
+              data = {
+                planta: "",
+                vehiculo: "",
+                cliente: movimiento.cliente.toUpperCase(),
+                fecha: moment(movimiento.fecha).format("DD/MM/YYYY"),
+                concepto: movimiento.concepto?.toUpperCase(),
+                debe: "-",
+                haber: formatNumberToCurrency(movimiento.importe),
+                saldo: formatNumberToCurrency(movimiento.saldo),
+              };
 
-              saldo: pagosMovimientos[i].saldo_actual_currency,
-            };
-            calcPagos = calcPagos + pagosMovimientos[i].monto;
-          } else {
-            //MOVIMIENTOS
-            let concepto = "";
+              break;
+            case "SALIDA":
+              data = {
+                planta: movimiento.planta?.toUpperCase(),
+                vehiculo: movimiento.vehiculo,
+                cliente: movimiento.cliente.toUpperCase(),
+                fecha: moment(movimiento.fecha).format("DD/MM/YYYY"),
+                concepto:
+                  movimiento.concepto?.toUpperCase() ||
+                  `${cajas}${kgCong}Planta: ${movimiento.planta?.toUpperCase()}\nVehículo: ${
+                    movimiento.vehiculo
+                  }`,
+                debe: formatNumberToCurrency(movimiento.importe),
+                haber: "-",
+                saldo: formatNumberToCurrency(movimiento.saldo),
+              };
 
-            if (pagosMovimientos[i].vehiculo !== "-") {
-              concepto = `${cajas}${kgCong}Planta: ${pagosMovimientos[
-                i
-              ].planta.toUpperCase()}\nVehículo: ${pagosMovimientos[
-                i
-              ].vehiculo.toUpperCase()}`;
-            } else {
-              concepto = pagosMovimientos[i].planta.toUpperCase();
-            }
+              break;
 
-            data = {
-              cliente: pagosMovimientos[i].cliente.toUpperCase(),
-              fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
-              concepto: concepto,
-              totalKg: pagosMovimientos[i].saldo_anterior_currency,
-              importe: formatNumberToCurrency(pagosMovimientos[i].importe), //DEBE
-              monto: "-", //HABER
-              saldo: pagosMovimientos[i].saldo_actual_currency,
-            };
-
-            calcImportes = calcImportes + pagosMovimientos[i].importe;
-            totalCajas = totalCajas + pagosMovimientos[i].cajas;
-            totalKgCong = totalKgCong + pagosMovimientos[i].kgCong;
+            default:
+              break;
           }
 
-          totalImporte = formatNumberToCurrency(calcImportes - calcPagos);
+          totalCajas = totalCajas + movimiento.cajas;
+          totalKgCong = totalKgCong + movimiento.kgCong;
+
+          totalImporte = formatNumberToCurrency(sumaMovimientos - sumaPagos);
           arr.push(data);
-        }
+        });
 
-        const ordered = [...arr].sort((a, b) => (a.fecha > b.fecha ? 1 : -1));
-
-        ordered.push({
-          monto: "Saldo período:",
+        arr.push({
+          importe: "Saldo período:",
           saldo: {
             label: totalImporte,
             options: { fontFamily: "Courier-Bold" },
@@ -160,7 +165,7 @@ module.exports = {
           subtitle: `Fecha de emisión:  ${emision}`,
           headers: [
             {
-              label: "Nombre",
+              label: "Codigo",
               property: "cliente",
               valign: "center",
               align: "center",
@@ -182,14 +187,14 @@ module.exports = {
             },
             {
               label: "Debe",
-              property: "importe",
+              property: "debe",
               valign: "center",
               align: "center",
               width: 80,
             },
             {
               label: "Haber",
-              property: "monto",
+              property: "haber",
               valign: "center",
               align: "center",
               width: 80,
@@ -203,7 +208,7 @@ module.exports = {
               width: 100,
             },
           ],
-          datas: ordered,
+          datas: arr,
         };
 
         const options = {
@@ -217,11 +222,12 @@ module.exports = {
           prepareHeader: () => doc.font("Courier-Bold").fontSize(10), // {Function}
           prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
             doc.font("Courier").fontSize(10);
-            row.monto !== "-" && row.monto !== "Saldo período:"
-              ? doc.addBackground(rectRow, "grey", 0.03)
+
+            row.debe === "-"
+              ? doc.addBackground(rectRow, "purple", 0.01)
               : null;
 
-            indexRow % 2 !== 0 && doc.addBackground(rectRow, "grey", 0.005);
+            indexRow % 2 !== 0 && doc.addBackground(rectRow, "grey", 0.006);
           },
         };
         const callback = () => {};
@@ -255,14 +261,14 @@ module.exports = {
           .text("Importe del período: ", { continued: true })
           .font("Courier-Bold")
           .text(totalImporte);
-        doc
+        /*  doc
           .moveDown(2)
           .fontSize(10)
           .font("Courier")
           .text("Saldo Actual del cliente: ", { continued: true })
           .font("Courier-Bold")
-          .text(findCC[0].saldo_currency);
-
+          .text(saldo);
+ */
         doc.end();
       } else {
         res.status(205).send("sin datos");
@@ -299,24 +305,10 @@ module.exports = {
             $lte: fechaFin,
           },
         }),
-        pagosModel.find({
-          fecha: {
-            $gte: fechaInicio,
-            $lte: fechaFin,
-          },
-        }),
-        titularesModel.find(),
+
+        cuentasCorrientesModel.find(),
       ])
         .then((results) => {
-          const [movimientos, pagos] = results;
-          const pagosMovimientos = [...pagos, ...movimientos];
-
-          pagosMovimientos.sort(function (a, b) {
-            return (
-              a.cliente.localeCompare(b.cliente) ||
-              Number(a.fecha - Number(b.fecha))
-            );
-          });
           /* 
           for (let i = 0; i < clientes.length; i++) { */
           let arr = [];
@@ -363,11 +355,10 @@ module.exports = {
               data = {
                 cliente: pagosMovimientos[i].cliente.toUpperCase(),
                 fecha: moment(pagosMovimientos[i].fecha).format("DD/MM/YYYY"),
-                concepto: `${cajas}${kgCong}Planta: ${pagosMovimientos[
-                  i
-                ].planta.toUpperCase()}\nVehículo: ${pagosMovimientos[
-                  i
-                ].vehiculo.toUpperCase()}`,
+                concepto: `${cajas}${kgCong}Planta: ${
+                  pagosMovimientos[i].planta.toUpperCase() ||
+                  movimientos[i].concepto
+                }\nVehículo: ${pagosMovimientos[i].vehiculo.toUpperCase()}`,
                 totalKg: pagosMovimientos[i].saldo_anterior_currency,
                 importe: formatNumberToCurrency(pagosMovimientos[i].importe), //DEBE
                 monto: "-", //HABER
@@ -544,52 +535,63 @@ module.exports = {
     const desde = moment(fecha).format("DD/MM/YYYY");
 
     try {
-      const findHojaRuta = await hojasRutaModel.find({
+      const hojaDeRuta = await hojasRutaModel.findOne({
         fecha: fecha,
       });
 
-      const findMovementsById = await movimientosModel.find({
-        _id: {
-          $in: findHojaRuta[0].movimientos,
-        },
-      });
+      const movimientos = await movimientosModel
+        .find({
+          _id: {
+            $in: hojaDeRuta.movimientos,
+          },
+        })
+        .sort({ fecha: 1 });
 
       let arr = [];
       let totalImporte = 0;
       let totalCajas = 0;
       let totalKgCong = 0;
       let calc = 0;
-      for (let i = 0; i < findMovementsById.length; i++) {
+
+      movimientos.map((movimiento) => {
         data = {
-          fecha: moment(findMovementsById[i].fecha).format("DD/MM/YYYY"),
-          cliente: findMovementsById[i].cliente.toUpperCase(),
-          planta: findMovementsById[i].planta.toUpperCase(),
-          vehiculo: findMovementsById[i].vehiculo,
-          cajas:
-            findMovementsById[i].cajas !== 0 ? findMovementsById[i].cajas : "-",
-          kgCong:
-            findMovementsById[i].kgCong !== 0
-              ? findMovementsById[i].kgCong + "Kg"
-              : "-",
-          importe: formatNumberToCurrency(findMovementsById[i].importe),
+          fecha: moment(movimiento.fecha).format("DD/MM/YYYY"),
+          cliente: movimiento.cliente.toUpperCase(),
+          planta: movimiento.planta.toUpperCase(),
+          vehiculo: movimiento.vehiculo,
+          cajas: movimiento.cajas !== 0 ? movimiento.cajas : "-",
+          kgCong: movimiento.kgCong !== 0 ? movimiento.kgCong + "Kg" : "-",
+          importe: formatNumberToCurrency(movimiento.importe),
+        };
+        arr.push(data);
+      });
+      /* for (let i = 0; i < findMovementsById.length; i++) {
+        data = {
+          fecha: moment(movimientos.fecha).format("DD/MM/YYYY"),
+          cliente: movimientos.cliente.toUpperCase(),
+          planta: movimientos.planta.toUpperCase(),
+          vehiculo: movimientos.vehiculo,
+          cajas: movimientos.cajas !== 0 ? findMovementsByI.cajas : "-",
+          kgCong: movimientos.kgCong !== 0 ? movimientos.kgCong + "Kg" : "-",
+          importe: formatNumberToCurrency(movimientos.importe),
         };
 
         arr.push(data);
-      }
+      } */
 
       /*   const ordered = [...arr].sort((a, b) => (a.fecha > b.fecha ? 1 : -1));  */
 
       arr.push({
         importe: {
-          label: findHojaRuta[0].importeTotal_currency,
+          label: hojaDeRuta.importeTotal_currency,
           options: { fontFamily: "Courier-Bold" },
         },
         cajas: {
-          label: ` ${findHojaRuta[0].cajasTotal}`,
+          label: `${hojaDeRuta.cajasTotal} Cajas`,
           options: { fontFamily: "Courier-Bold" },
         },
         kgCong: {
-          label: `${findHojaRuta[0].kgTotal}`,
+          label: `${hojaDeRuta.kgTotal} Kg.`,
           options: { fontFamily: "Courier-Bold" },
         },
       });
@@ -678,7 +680,7 @@ module.exports = {
       const callback = () => {};
       doc.table(table, options, callback);
 
-      doc.moveDown(2).fontSize(11).font("Courier-Bold").text("Resumen de hoja");
+      /*  doc.moveDown(2).fontSize(11).font("Courier-Bold").text("Resumen de hoja");
 
       doc
         .moveDown()
@@ -686,7 +688,7 @@ module.exports = {
         .font("Courier")
         .text("Cantidad de cajas: ", { continued: true })
         .font("Courier-Bold")
-        .text(`${findHojaRuta[0].cajasTotal} Cajas.`);
+        .text(`${hojaDeRuta.cajasTotal} Cajas.`);
 
       doc
         .moveDown()
@@ -694,15 +696,15 @@ module.exports = {
         .font("Courier")
         .text("Kg de congelado: ", { continued: true })
         .font("Courier-Bold")
-        .text(`${findHojaRuta[0].kgTotal} Kg.`);
+        .text(`${hojaDeRuta.kgTotal} Kg.`);
       doc
         .moveDown()
         .fontSize(10)
         .font("Courier")
         .text("Importe total: ", { continued: true })
         .font("Courier-Bold")
-        .text(findHojaRuta[0].importeTotal_currency);
-
+        .text(hojaDeRuta.importeTotal_currency);
+ */
       doc.end();
     } catch (e) {
       next(e);
