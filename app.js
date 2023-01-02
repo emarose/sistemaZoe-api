@@ -63,7 +63,7 @@ app.use(function (err, req, res, next) {
 });
 
 app.listen(process.env.PORT || 3000, () => {
-  console.log("Express conectado");
+  console.log("Express conectado a", process.env.PORT);
 });
 
 module.exports = app;
