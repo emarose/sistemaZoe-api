@@ -27,19 +27,16 @@ module.exports = {
     }
   },
   create: async function (req, res, next) {
-    const { codigo, ciudad, precioCongelado, precioFresco } = req.body;
+    const { titular, ciudad, precioCongelado, precioFresco } = req.body;
     try {
       const document = new cuentasCorrientesModel({
-        titular: codigo,
+        titular: titular,
         ciudad: ciudad,
         precioCongelado: precioCongelado,
         precioFresco: precioFresco,
-        /*       debe: 0,
-        haber: 0, */
         isActive: true,
-        /*         balance: 0, */
       });
-
+      console.log(document);
       const response = await document.save();
 
       res.json(response);
