@@ -74,7 +74,7 @@ module.exports = {
         tipo: "SALIDA",
         nuevo_balance: nuevo_balance,
       });
-      console.log("nuevo:", data);
+
       const document = await data.save();
 
       res.json(document);
@@ -210,7 +210,7 @@ module.exports = {
     const page = req.query.page || 0;
     const perPage = req.query.limit || 100;
 
-    const fecha = new Date(req.body.fecha);
+    const fecha = new Date(req.query.fecha);
     fecha.setHours(4);
     fecha.setMinutes(0);
     fecha.setMilliseconds(0);
@@ -262,23 +262,6 @@ module.exports = {
     } catch (e) {
       next(e);
     }
-
-    /*  const fecha = new Date(req.body.fecha);
-    fecha.setHours(4);
-    fecha.setMinutes(0);
-    fecha.setMilliseconds(0);
-    fecha.setSeconds(0);
-
-    try {
-      const documents = await movimientosModel.find({
-        fecha: fecha,
-      });
-
-      console.log(documents);
-      res.json(documents);
-    } catch (e) {
-      next(e);
-    } */
   },
   betweenDates: async function (req, res, next) {
     const { initDate, endDate, codigo } = req.body.data;
@@ -304,7 +287,6 @@ module.exports = {
         cliente: codigo,
       });
 
-      console.log(documents);
       res.json(documents);
     } catch (e) {
       next(e);
@@ -331,7 +313,7 @@ module.exports = {
           $lte: fechaFin,
         },
       });
-      console.log(documents);
+
       res.json(documents);
     } catch (e) {
       next(e);
