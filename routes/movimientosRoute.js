@@ -9,7 +9,8 @@ router.post("/nuevoPago", movimientosController.nuevoPago);
 router.post("/nuevoMovimiento", movimientosController.nuevoMovimiento);
 router.put("/editarPago/:id", movimientosController.editarPago);
 
-router.get("/byDate", movimientosController.byDate);
+router.post("/byDate", movimientosController.byDate);
+
 router.post("/betweenDates", movimientosController.betweenDates);
 router.post("/betweenDatesAll", movimientosController.betweenDatesAll);
 router.post("/deletePago/:id", movimientosController.deletePago);

@@ -210,7 +210,7 @@ module.exports = {
     const page = req.query.page || 0;
     const perPage = req.query.limit || 100;
 
-    const fecha = new Date(req.query.fecha);
+    const fecha = new Date(req.body.fecha);
     fecha.setHours(4);
     fecha.setMinutes(0);
     fecha.setMilliseconds(0);
