@@ -46,7 +46,6 @@ app.use("/cuentasCorrientes", cuentasCorrientesRouter);
 app.use("/movimientos", movimientosRouter);
 app.use("/hojasRuta", hojasRutaRouter);
 app.use("/reportes", reportesRouter);
-
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
