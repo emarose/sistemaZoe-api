@@ -2,7 +2,7 @@ const titularesModel = require("../models/titularesModel");
 const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
 
 module.exports = {
-  create: async function (req, res, next) {
+  /*   create: async function (req, res, next) {
     try {
       const document = new titularesModel({
         saldo: 0,
@@ -80,5 +80,5 @@ module.exports = {
     } catch (e) {
       console.log(e);
     }
-  },
+  }, */
 };

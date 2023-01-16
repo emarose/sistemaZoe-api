@@ -1,7 +1,7 @@
 const mongoose = require("../bin/mongodb");
 const errorMessage = require("../util/errorMessage");
 
-const titularesSchema = new mongoose.Schema({
+/* const titularesSchema = new mongoose.Schema({
   codigo: {
     type: String,
     unique: true,
@@ -25,23 +25,7 @@ const titularesSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: "cuentasCorrientes",
   },
-});
-
-titularesSchema.virtual("precioCongelado_currency").get(function () {
-  let precioCongelado = this.precioCongelado.toFixed(2).replace(".", ",");
-  return `$ ${String(precioCongelado).replace(
-    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
-    "$1."
-  )}`;
-});
-
-titularesSchema.virtual("precioFresco_currency").get(function () {
-  let precioFresco = this.precioFresco.toFixed(2).replace(".", ",");
-  return `$ ${String(precioFresco).replace(
-    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
-    "$1."
-  )}`;
-});
+}); 
 
 titularesSchema.set("toJSON", { getters: true, virtuals: true });
-module.exports = mongoose.model("titulares", titularesSchema);
+module.exports = mongoose.model("titulares", titularesSchema);*/

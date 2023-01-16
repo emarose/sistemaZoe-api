@@ -2,8 +2,7 @@ const hojasRutaModel = require("../models/hojasRutaModel");
 const movimientosModel = require("../models/movimientosModel");
 const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
 
-const { formatDateString } = require("../util/utils");
-const { formatNumberToCurrency } = require("../util/utils");
+const { formatDateString, formatNumberToCurrency } = require("../util/utils");
 const PDFDocumentTable = require("pdfkit-table");
 const moment = require("moment");
 const fs = require("fs");
@@ -14,25 +13,22 @@ module.exports = {
     const emision = formatDateString(new Date());
 
     const fechaInicio = new Date(initDate);
-    fechaInicio.setHours(-3);
+
+    fechaInicio.setHours(4);
     fechaInicio.setMinutes(0);
     fechaInicio.setMilliseconds(0);
     fechaInicio.setSeconds(0);
 
     const fechaFin = new Date(endDate);
-    fechaFin.setHours(24);
+    fechaFin.setHours(4);
     fechaFin.setMinutes(0);
     fechaFin.setMilliseconds(0);
     fechaFin.setSeconds(0);
 
-    const desde = moment(fechaInicio).format("DD/MM/YYYY");
-    const hasta = moment(fechaFin).format("DD/MM/YYYY");
+    const desde = formatDateString(fechaInicio);
+    const hasta = formatDateString(fechaFin);
 
     try {
-      const cuentaCorriente = await cuentasCorrientesModel.findOne({
-        titular: codigo,
-      });
-
       const dataMovimientos = await movimientosModel
         .find({
           fecha: {
@@ -42,13 +38,15 @@ module.exports = {
           cliente: codigo,
         })
         .sort({ fecha: 1 });
-
+      if (dataMovimientos.length === 0) {
+        return res.status(402).json("SIN DATOS");
+      }
       const movimientos = JSON.parse(JSON.stringify(dataMovimientos));
 
       let sumaPagos = 0;
       let sumaMovimientos = 0;
-      let sumaCongelado = 0;
-      let sumaFresco = 0;
+      /*       let sumaCongelado = 0;
+      let sumaFresco = 0; */
 
       movimientos.map((movimiento) => {
         switch (movimiento.tipo) {
@@ -56,17 +54,20 @@ module.exports = {
             sumaPagos += movimiento.importe;
             break;
           case "SALIDA":
-            sumaCongelado +=
+            sumaMovimientos += movimiento.importe;
+            /*  sumaCongelado +=
               cuentaCorriente.precioCongelado * movimiento.kgCong;
             sumaFresco += cuentaCorriente.precioFresco * movimiento.cajas;
             if (movimiento.precioCongelado !== 0) {
               sumaMovimientos = sumaFresco + sumaCongelado;
             } else {
               sumaMovimientos += movimiento.importe;
-            }
+            } */
             break;
         }
-        Object.assign(movimiento, { saldo: sumaMovimientos - sumaPagos });
+        Object.assign(movimiento, {
+          saldo: sumaMovimientos - sumaPagos || movimiento.importe,
+        });
       });
 
       if (movimientos.length !== 0) {
@@ -128,13 +129,13 @@ module.exports = {
               break;
           }
 
-          totalCajas = totalCajas + movimiento.cajas;
-          totalKgCong = totalKgCong + movimiento.kgCong;
+          totalCajas += movimiento.cajas || null;
+          totalKgCong += movimiento.kgCong || null;
 
           totalImporte = formatNumberToCurrency(sumaMovimientos - sumaPagos);
           arr.push(data);
         });
-
+        console.log(totalCajas, totalKgCong);
         arr.push({
           importe: "Saldo período:",
           saldo: {
@@ -152,6 +153,7 @@ module.exports = {
         doc.pipe(fs.createWriteStream("Exported/ListadoEntreFechas.pdf"));
         res.setHeader("Content-type", "application/pdf");
         doc.pipe(res);
+
         /* titulo */
         doc
           .fontSize(20)
@@ -212,14 +214,15 @@ module.exports = {
         };
 
         const options = {
-          // {Number} default: undefined // A4 595.28 x 841.89 (portrait) (about width sizes)
-          x: 0, // {Number} default: undefined | doc.x
+          x: 0,
           rowSpacing: 10,
           colSpacing: 10,
           minRowHeight: 25,
-
+          divider: {
+            header: { disabled: false, width: 1, opacity: 1 },
+          },
           // functions
-          prepareHeader: () => doc.font("Courier-Bold").fontSize(10), // {Function}
+          prepareHeader: () => doc.font("Courier-Bold").fontSize(10),
           prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
             doc.font("Courier").fontSize(10);
 
@@ -261,14 +264,7 @@ module.exports = {
           .text("Importe del período: ", { continued: true })
           .font("Courier-Bold")
           .text(totalImporte);
-        /*  doc
-          .moveDown(2)
-          .fontSize(10)
-          .font("Courier")
-          .text("Saldo Actual del cliente: ", { continued: true })
-          .font("Courier-Bold")
-          .text(saldo);
- */
+
         doc.end();
       } else {
         res.status(205).send("sin datos");
@@ -538,7 +534,6 @@ module.exports = {
       const hojaDeRuta = await hojasRutaModel.findOne({
         fecha: fecha,
       });
-
       const movimientos = await movimientosModel
         .find({
           _id: {
@@ -548,10 +543,6 @@ module.exports = {
         .sort({ fecha: 1 });
 
       let arr = [];
-      let totalImporte = 0;
-      let totalCajas = 0;
-      let totalKgCong = 0;
-      let calc = 0;
 
       movimientos.map((movimiento) => {
         data = {
@@ -559,27 +550,12 @@ module.exports = {
           cliente: movimiento.cliente.toUpperCase(),
           planta: movimiento.planta.toUpperCase(),
           vehiculo: movimiento.vehiculo,
-          cajas: movimiento.cajas !== 0 ? movimiento.cajas : "-",
-          kgCong: movimiento.kgCong !== 0 ? movimiento.kgCong + "Kg" : "-",
+          cajas: movimiento.cajas ? movimiento.cajas : "-",
+          kgCong: movimiento.kgCong ? movimiento.kgCong + "Kg" : "-",
           importe: formatNumberToCurrency(movimiento.importe),
         };
         arr.push(data);
       });
-      /* for (let i = 0; i < findMovementsById.length; i++) {
-        data = {
-          fecha: moment(movimientos.fecha).format("DD/MM/YYYY"),
-          cliente: movimientos.cliente.toUpperCase(),
-          planta: movimientos.planta.toUpperCase(),
-          vehiculo: movimientos.vehiculo,
-          cajas: movimientos.cajas !== 0 ? findMovementsByI.cajas : "-",
-          kgCong: movimientos.kgCong !== 0 ? movimientos.kgCong + "Kg" : "-",
-          importe: formatNumberToCurrency(movimientos.importe),
-        };
-
-        arr.push(data);
-      } */
-
-      /*   const ordered = [...arr].sort((a, b) => (a.fecha > b.fecha ? 1 : -1));  */
 
       arr.push({
         importe: {
@@ -587,11 +563,11 @@ module.exports = {
           options: { fontFamily: "Courier-Bold" },
         },
         cajas: {
-          label: `${hojaDeRuta.cajasTotal} Cajas`,
+          label: `${hojaDeRuta.cajasTotal || 0} Cajas`,
           options: { fontFamily: "Courier-Bold" },
         },
         kgCong: {
-          label: `${hojaDeRuta.kgTotal} Kg.`,
+          label: `${hojaDeRuta.kgTotal || 0} Kg.`,
           options: { fontFamily: "Courier-Bold" },
         },
       });
@@ -669,11 +645,15 @@ module.exports = {
         rowSpacing: 10,
         colSpacing: 10,
         minRowHeight: 25,
+        divider: {
+          header: { disabled: false, width: 1, opacity: 1 },
+        },
         // functions
         prepareHeader: () => doc.font("Courier-Bold").fontSize(10),
         prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
-          doc.font("Courier").fontSize(10),
-            indexRow % 2 !== 0 && doc.addBackground(rectRow, "grey", 0.005);
+          doc.font("Courier").fontSize(10);
+
+          indexRow % 2 === 0 && doc.addBackground(rectRow, "grey", 0.006);
         },
       };
 

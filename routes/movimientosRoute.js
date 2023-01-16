@@ -17,6 +17,7 @@ router.post("/deletePago/:id", movimientosController.deletePago);
 router.post("/delete/:id", movimientosController.deleteMovement);
 router.put("/:id", movimientosController.editMovement);
 router.get("/", movimientosController.getAll);
+router.get("/pagos", movimientosController.getAllPagos);
 router.get("/getByName/:name", movimientosController.getByName);
 router.get("/getAllPagosByName/:name", movimientosController.getAllPagosByName);
 

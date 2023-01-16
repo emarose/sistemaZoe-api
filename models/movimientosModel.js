@@ -19,11 +19,9 @@ const movimientosSchema = mongoose.Schema({
   },
   cajas: {
     type: Number,
-    default: 0,
   },
   kgCong: {
     type: Number,
-    default: 0,
   },
   cliente: {
     type: String,
@@ -47,14 +45,12 @@ const movimientosSchema = mongoose.Schema({
   },
   precioFresco: {
     type: Number,
-    default: 0,
   },
   /* nuevo_balance: {
     type: Number,
   }, */
   precioCongelado: {
     type: Number,
-    default: 0,
   } /*
   saldo_actual: {
     type: Number,

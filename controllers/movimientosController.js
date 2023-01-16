@@ -54,12 +54,6 @@ module.exports = {
     fecha.setSeconds(0);
 
     try {
-      const cuentaCorriente = await cuentasCorrientesModel.find({
-        titular: cliente,
-      });
-
-      const nuevo_balance = cuentaCorriente[0].balance + importe;
-
       const data = new movimientosModel({
         cliente: cliente,
         planta: planta,
@@ -72,7 +66,6 @@ module.exports = {
         precioFresco: precioFresco,
         precioCongelado: precioCongelado,
         tipo: "SALIDA",
-        nuevo_balance: nuevo_balance,
       });
 
       const document = await data.save();
@@ -96,6 +89,7 @@ module.exports = {
     const cuentaCorriente = await cuentasCorrientesModel.find({
       titular: codigo,
     });
+
     if (cuentaCorriente.length !== 0) {
       try {
         const document = new movimientosModel({
@@ -120,21 +114,21 @@ module.exports = {
     }
   },
   editarPago: async function (req, res, next) {
-    const { concepto, fecha } = req.body;
-    const importe = parseInt(req.body.importe);
+    const concepto = req.body.concepto;
+    const fecha = new Date(req.body.date);
 
-    let formatFecha = new Date(fecha);
-    formatFecha.setHours(4);
-    formatFecha.setMinutes(0);
-    formatFecha.setMilliseconds(0);
-    formatFecha.setSeconds(0);
+    fecha.setHours(4);
+    fecha.setMinutes(0);
+    fecha.setMilliseconds(0);
+    fecha.setSeconds(0);
+
+    const importe = parseInt(req.body.importe);
 
     try {
       const doc = await movimientosModel.findOne({ _id: req.params.id });
       const update = { fecha, importe, concepto };
       await doc.updateOne(update);
 
-      console.log(update);
       res.json(doc);
     } catch (e) {
       console.log(e);
@@ -152,7 +146,8 @@ module.exports = {
     try {
       const totalDocuments = await movimientosModel
         .find({ tipo: "ENTRADA" })
-        .countDocuments();
+        .countDocuments()
+        .sort({ fecha: -1 });
       const ultimaPagina = Math.ceil(totalDocuments / limit);
 
       /* Buscar todos los pagos (ENTRADAS) por cliente */
@@ -160,7 +155,7 @@ module.exports = {
         .find({ cliente: cliente, tipo: "ENTRADA" })
         .limit(limit)
         .skip(skip)
-        .sort({ fecha: -1 });
+        .sort({ fecha: 1 });
 
       res.json([documents, ultimaPagina]);
     } catch (e) {
@@ -168,8 +163,46 @@ module.exports = {
       next(e);
     }
   },
+  getAllPagos: async function (req, res, next) {
+    /* PAGINATION */
+    const page = parseInt(req.query.page) || 0;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = page * limit;
 
+    try {
+      const totalDocuments = await movimientosModel
+        .find({ tipo: "ENTRADA" })
+        .countDocuments();
+
+      const ultimaPagina = Math.ceil(totalDocuments / limit);
+      const documents = await movimientosModel
+        .find({ tipo: "ENTRADA" })
+        .limit(limit)
+        .skip(skip);
+      console.log(documents);
+      res.json([documents, ultimaPagina]);
+    } catch (e) {
+      next(e);
+    }
+  },
+  getAll: async function (req, res, next) {
+    /* PAGINATION */
+    const page = parseInt(req.query.page) || 0;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = page * limit;
+
+    try {
+      const totalDocuments = await movimientosModel.find().countDocuments();
+
+      const ultimaPagina = Math.ceil(totalDocuments / limit);
+      const documents = await movimientosModel.find().limit(limit).skip(skip);
+      res.json([documents, ultimaPagina]);
+    } catch (e) {
+      next(e);
+    }
+  },
   addNuevoMovimiento: async function (req, res, next) {
+    const { cliente, concepto } = req.body;
     const fecha = new Date(req.body.fecha);
     fecha.setHours(4);
     fecha.setMinutes(0);
@@ -178,31 +211,19 @@ module.exports = {
 
     try {
       const data = new movimientosModel({
-        cliente: req.body.cliente,
-        planta: req.body.concepto,
+        cliente: cliente,
+        concepto: concepto,
         fecha: fecha,
-        vehiculo: "-",
-        cajas: 0,
-        kgCong: 0,
-        precioFresco: 0,
-        precioCongelado: 0,
         importe: parseFloat(req.body.importe),
-        tipo: "ENTRADA",
+        tipo: "SALIDA",
       });
+
       const document = await data.save();
 
-      res.status(201).json(document);
+      res.status(200).json(document);
     } catch (e) {
       console.log(e);
       e.status = 400;
-      next(e);
-    }
-  },
-  getAll: async function (req, res, next) {
-    try {
-      const movs = await movimientosModel.find();
-      res.json(movs);
-    } catch (e) {
       next(e);
     }
   },
@@ -227,7 +248,6 @@ module.exports = {
         })
         .limit(perPage)
         .skip(parseInt(page) * perPage);
-
       let ultimaPagina = Math.ceil(totalDocuments / perPage);
       /*  const movimientos = await movimientosModel.find({
         titular: req.params.cliente,
@@ -352,18 +372,21 @@ module.exports = {
             sumaPagos += movimiento.importe;
             break;
           case "SALIDA":
-            sumaCongelado +=
+            sumaMovimientos += movimiento.importe;
+            /* sumaCongelado +=
               cuentaCorriente[0].precioCongelado * movimiento.kgCong;
             sumaFresco += cuentaCorriente[0].precioFresco * movimiento.cajas;
             if (movimiento.precioCongelado !== 0) {
               sumaMovimientos = sumaFresco + sumaCongelado;
             } else {
               sumaMovimientos += movimiento.importe;
-            }
+            } */
             break;
         }
-
-        Object.assign(movimiento, { saldo: sumaMovimientos - sumaPagos });
+        Object.assign(movimiento, {
+          saldo:
+            sumaMovimientos - sumaPagos || sumaMovimientos - movimiento.importe,
+        });
       });
 
       if (newData.length === 0) {
@@ -413,10 +436,18 @@ module.exports = {
   },
   editMovement: async function (req, res, next) {
     const { cliente, planta, vehiculo, cajas, kgCong, importe } = req.body;
-
+    let fecha = new Date(req.body.fecha);
     try {
       const doc = await movimientosModel.findOne({ _id: req.params.id });
-      const update = { cliente, planta, vehiculo, cajas, kgCong, importe };
+      const update = {
+        fecha,
+        cliente,
+        planta,
+        vehiculo,
+        cajas,
+        kgCong,
+        importe,
+      };
       await doc.updateOne(update);
 
       res.json(doc);
