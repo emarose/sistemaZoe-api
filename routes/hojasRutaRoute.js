@@ -2,13 +2,11 @@ var express = require("express");
 var router = express.Router();
 const hojasRutaController = require("../controllers/hojasRutaController");
 
-/* router.get("/countEvents", eventsController.amount);
-router.get("/", eventsController.getAll);
-router.get("/byId/:id", eventsController.getById);
-router.put("/:id", eventsController.update);
-router.post("/add", eventsController.create);
-router.delete("/:id", eventsController.delete);
-router.put("/unlink/:code", eventsController.unlink);
-router.put("/link/:code", eventsController.link);
- */
+router.get("/", hojasRutaController.getAll);
+router.get("/betweenDates", hojasRutaController.betweenDates);
+router.post("/add", hojasRutaController.create);
+router.get("/getByDate/:date", hojasRutaController.getByDate);
+router.put("/:id", hojasRutaController.modificar);
+router.delete("/remove/:date", hojasRutaController.eliminar);
+
 module.exports = router;

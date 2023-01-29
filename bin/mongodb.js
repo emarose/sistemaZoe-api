@@ -1,8 +1,15 @@
 var mongoose = require("mongoose");
 
+const url = process.env.MONGO_URL;
+
+mongoose.set("strictQuery", false);
+
 mongoose.connect(
-  "mongodb+srv://emarose:12Metallica12@cluster0.wj35z.mongodb.net/sistemaZoe?retryWrites=true&w=majority",
-  { useNewUrlParser: true },
+  url,
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  },
   function (error) {
     if (error) {
       throw error;
@@ -11,4 +18,5 @@ mongoose.connect(
     }
   }
 );
+
 module.exports = mongoose;

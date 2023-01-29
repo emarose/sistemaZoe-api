@@ -1,73 +1,139 @@
 const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
+const movimientosModel = require("../models/movimientosModel");
 
 module.exports = {
-  /*  getAll: async function (req, res, next) {
+  getAll: async function (req, res, next) {
+    const page = req.query.page;
+    const perPage = req.query.limit;
     try {
-      const products = await productsModel.find();
+      // busco la cantidad de documentos
+      const totalDocuments = await cuentasCorrientesModel
+        .find()
+        .countDocuments();
 
-      res.json(products);
-    } catch (e) {
-      next(e);
-    }
-  },
-  getById: async function (req, res, next) {
-   
-    try {
-      const documents = await productsModel.findById(req.params.id);
-      res.json(documents);
+      // busco los documentos, limitados
+      const documentsFound = await cuentasCorrientesModel
+        .find()
+        .limit(perPage)
+        .skip(parseInt(page) * perPage);
+
+      // divido el total de documentos por la cantidad que quiero traer por página
+      let ultimaPagina = Math.ceil(totalDocuments / perPage);
+
+      // devuelvo los documentos encontrados y la ultima pagina
+      res.json([documentsFound, ultimaPagina]);
     } catch (e) {
       next(e);
     }
   },
   create: async function (req, res, next) {
+    const { titular, ciudad, precioCongelado, precioFresco } = req.body;
     try {
-      const data = new productsModel({
-        code: req.body.code,
-        productName: req.body.productName,
-        category: req.body.category,
-        price: req.body.price,
-        cost: req.body.cost || 0,
-        details: req.body.details === " " ? "Sin detalles" : req.body.details,
+      const document = new cuentasCorrientesModel({
+        titular: titular,
+        ciudad: ciudad,
+        precioCongelado: precioCongelado,
+        precioFresco: precioFresco,
+        isActive: true,
       });
-      const document = await data.save();
+      console.log(document);
+      const response = await document.save();
 
-      res.status(201).json(document);
+      res.json(response);
     } catch (e) {
       console.log(e);
-      e.status = 400;
       next(e);
     }
   },
-  update: async function (req, res, next) {
-    console.log(req.body[0].searchField);
+  getByName: async function (req, res, next) {
+    const name = req.params.name;
 
     try {
-      const doc = await productsModel.findOne({ _id: req.params.id });
-      const update = { [req.body[0].searchField]: req.body[0].update };
-      await doc.updateOne(update);
+      const document = await cuentasCorrientesModel.find({
+        titular: name,
+      });
+
+      res.json(document);
+    } catch (e) {
+      next(e);
+    }
+  },
+  getById: async function (req, res, next) {
+    const id = req.params.id;
+    try {
+      const document = await cuentasCorrientesModel.find({
+        titular_id: id,
+      });
+
+      res.json(document[0]);
+    } catch (e) {
+      next(e);
+    }
+  },
+  agregarAlHaber: async function (req, res, next) {
+    const cuentaCorriente_id = req.body.cuentaCorriente_id;
+    let monto = parseInt(req.body.monto);
+
+    try {
+      const document = await cuentasCorrientesModel.updateOne(
+        { _id: cuentaCorriente_id },
+        { $inc: { haber: monto } }
+      );
+
+      res.json(`Agregados ${monto} al haber.`);
+    } catch (e) {
+      next(e);
+    }
+  },
+  agregarAlDebe: async function (req, res, next) {
+    const cuentaCorriente_id = req.body.cuentaCorriente_id;
+    let monto = parseInt(req.body.monto);
+
+    try {
+      const document = await cuentasCorrientesModel.updateOne(
+        { _id: cuentaCorriente_id },
+        { $inc: { debe: monto } }
+      );
+
+      res.json(`Agregados ${monto} al debe.`);
+    } catch (e) {
+      next(e);
+    }
+  },
+  restarDebe: async function (req, res, next) {
+    const { codigo, monto } = req.body;
+
+    console.log("restar debe > monto:", monto);
+    try {
+      const cliente = await cuentasCorrientesModel.findOne({ codigo: codigo });
+
+      const id_cliente = cliente._id;
+      const document = await cuentasCorrientesModel.updateOne(
+        { titular_id: id_cliente },
+        { $inc: { debe: -monto } }
+      );
+      res.json(`Agregados ${monto} al debe.`);
+    } catch (e) {
+      next(e);
+    }
+  },
+  modificar: async function (req, res, next) {
+    const updateData = Object.fromEntries(
+      Object.entries(req.body).filter(([_, v]) => v != "")
+    );
+    console.log(updateData);
+    try {
+      const doc = await cuentasCorrientesModel.findOneAndUpdate(
+        { _id: req.query.id },
+        updateData,
+        {
+          new: true,
+        }
+      );
 
       res.json(doc);
     } catch (e) {
       console.log(e);
     }
   },
-  delete: async function (req, res, next) {
-    try {
-      console.log(req.body);
-      const deleted = await productsModel.deleteOne({ _id: req.params.id });
-      res.json(deleted);
-    } catch (e) {
-      next(e);
-    }
-  },
-  amount: async function (req, res, next) {
-    try {
-      const amount = await productsModel.find({}).sort({ code: -1 }).limit(1);
-
-      amount[0] ? res.json(amount[0].code) : res.json(0);
-    } catch (e) {
-      console.log(e);
-      next(e);
-    }
-  }, */
 };

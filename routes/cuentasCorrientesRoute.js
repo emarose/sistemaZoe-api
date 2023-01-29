@@ -2,10 +2,13 @@ var express = require("express");
 var router = express.Router();
 const cuentasCorrientesController = require("../controllers/cuentasCorrientesController");
 
-/* router.get("/", categoriesController.getAll);
-router.post("/add", categoriesController.create);
-router.delete("/:id", categoriesController.delete);
-router.put("/:id", categoriesController.update);
-router.get("/countCategories", categoriesController.amount); */
+router.get("/", cuentasCorrientesController.getAll);
+router.post("/add", cuentasCorrientesController.create);
+router.put("/haber", cuentasCorrientesController.agregarAlHaber);
+router.put("/debe", cuentasCorrientesController.agregarAlDebe);
+router.put("/debe/restar", cuentasCorrientesController.restarDebe);
+router.get("/getByName/:name", cuentasCorrientesController.getByName);
+router.put("/", cuentasCorrientesController.modificar);
+router.get("/getById/:id", cuentasCorrientesController.getById);
 
 module.exports = router;

@@ -1,94 +1,113 @@
 const hojasRutaModel = require("../models/hojasRutaModel");
+const movimientosModel = require("../models/movimientosModel");
+const { formatDateString } = require("../util/utils");
+const { formatNumberToCurrency } = require("../util/utils");
+
+var path = require("path");
+
+const pdf = require("pdf-creator-node");
+var fs = require("fs");
 
 module.exports = {
-  /*  getAll: async function (req, res, next) {
+  getAll: async function (req, res, next) {
     try {
-      const events = await eventsModel.find();
+      const document = await hojasRutaModel.find();
 
-      res.json(events);
-    } catch (e) {
-      next(e);
-    }
-  },
-   getByCode: async function (req, res, next) {
-    try {
-      console.log(req.params);
-      const events = await eventsModel.find({ code: parseInt(req.params) });
-      console.log(events);
-      res.json(events);
-    } catch (e) {
-      next(e);
-    }
-  }, 
-  getById: async function (req, res, next) {
-    try {
-      const events = await eventsModel.find({ _id: req.params.id });
-
-      res.json(events);
+      res.json(document);
     } catch (e) {
       next(e);
     }
   },
   create: async function (req, res, next) {
+    const fecha = new Date(req.body.fecha);
+
+    fecha.setHours(4);
+    fecha.setMinutes(0);
+    fecha.setMilliseconds(0);
+    fecha.setSeconds(0);
+
     try {
-      const document = new eventsModel({
-        code: req.body.code,
-        name: req.body.name,
-        date: req.body.date,
-        cost: req.body.cost,
-        notes: req.body.notes,
-        address: req.body.address,
-        orders: req.body.orders,
+      const document = new hojasRutaModel({
+        movimientos: req.body.movimientos,
+        fecha: fecha,
+        importeTotal: req.body.importeTotal,
+        cajasTotal: req.body.cajasTotal,
+        kgTotal: req.body.kgTotal,
       });
+
+      console.log(document);
 
       const response = await document.save();
 
       res.json(response);
     } catch (e) {
-      //e.status=200
-      next(e);
-    }
-  },
-  delete: async function (req, res, next) {
-    try {
-      const deleted = await eventsModel.deleteOne({ _id: req.params.id });
-      res.json(deleted);
-    } catch (e) {
-      next(e);
-    }
-  },
-
-  unlink: async function (req, res, next) {
-    try {
-      console.log(req.body);
-      const { eventId, orderCode } = req.body;
-
-      const update = await eventsModel.updateOne(
-        { _id: eventId },
-        { $pull: { orders: orderCode } },
-        { multi: true }
-      );
-
-      const updatePurchaseOrders = await purchaseOrdersModel.updateOne(
-        { code: orderCode },
-        { event: "Sin asociar" }
-      );
-
-      console.log(update, updatePurchaseOrders);
-
-      res.json(updatePurchaseOrders);
-    } catch (e) {
       console.log(e);
+      res.status(555);
+      res.send("hoja duplicada");
+    }
+  },
+  getByDate: async function (req, res, next) {
+    const date = new Date(req.params.date);
+    date.setHours(4);
+    date.setMinutes(0);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+
+    try {
+      const document = await hojasRutaModel.find({
+        fecha: date,
+      });
+
+      res.json(document[0]);
+    } catch (e) {
       next(e);
     }
   },
-  link: async function (req, res, next) {
-    console.log("BODY:", req.body, "PARAMS:", req.params);
+  betweenDates: async function (req, res, next) {
+    const { initDate, endDate } = req.query;
+    console.log(req.query);
+
+    const fechaInicio = new Date(initDate);
+    fechaInicio.setHours(4);
+    fechaInicio.setMinutes(0);
+    fechaInicio.setMilliseconds(0);
+    fechaInicio.setSeconds(0);
+
+    console.log(fechaInicio);
+    const fechaFin = new Date(endDate);
+    fechaFin.setHours(4);
+    fechaFin.setMinutes(0);
+    fechaFin.setMilliseconds(0);
+    fechaFin.setSeconds(0);
 
     try {
-      const update = await eventsModel.updateOne(
-        { code: req.params.code },
-        { $push: { orders: req.body.orders } },
+      const documents = await hojasRutaModel.find({
+        fecha: {
+          $gte: fechaInicio,
+          $lte: fechaFin,
+        },
+      });
+
+      console.log(documents);
+      res.json(documents);
+    } catch (e) {
+      next(e);
+    }
+  },
+  modificar: async function (req, res, next) {
+    const { fecha, movimientos, importeTotal, cajasTotal, kgTotal } = req.body;
+    console.log(cajasTotal);
+    try {
+      const update = await hojasRutaModel.updateOne(
+        { id: req.params.id },
+        {
+          $set: {
+            importeTotal: importeTotal,
+            movimientos: movimientos,
+            cajasTotal: cajasTotal,
+            kgTotal: kgTotal,
+          },
+        },
         { multi: true }
       );
 
@@ -99,13 +118,18 @@ module.exports = {
       next(e);
     }
   },
-  amount: async function (req, res, next) {
+  eliminar: async function (req, res, next) {
+    const fecha = new Date(req.params.date);
+    fecha.setHours(4);
+    fecha.setMinutes(0);
+    fecha.setMilliseconds(0);
+    fecha.setSeconds(0);
+    console.log(fecha);
     try {
-      const amount = await eventsModel.find({}).sort({ code: -1 }).limit(1);
-      amount[0] ? res.json(amount[0].code) : res.json(0);
+      const deleted = await hojasRutaModel.deleteOne({ fecha: fecha });
+      res.json(deleted);
     } catch (e) {
-      console.log(e);
       next(e);
     }
-  }, */
+  },
 };

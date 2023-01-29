@@ -1,89 +1,84 @@
 const titularesModel = require("../models/titularesModel");
+const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
 
 module.exports = {
-  create: async function (req, res, next) {
-    console.log(req.body);
-
+  /*   create: async function (req, res, next) {
     try {
       const document = new titularesModel({
+        saldo: 0,
         codigo: req.body.codigo,
-        alias: req.body.alias,
         ciudad: req.body.ciudad,
-        precioCongelado: parseInt(req.body.precioCongelado),
-        precioFresco: parseInt(req.body.precioFresco),
+        precioCongelado: req.body.precioCongelado,
+        precioFresco: req.body.precioFresco,
       });
 
       const response = await document.save();
 
-      res.json(response);
+      const doc = new cuentasCorrientesModel({
+        titular_id: response._id,
+        debe: 0,
+        haber: 0,
+        isActive: true,
+      });
+
+      const save = await doc.save();
+
+      res.json(save);
     } catch (e) {
       console.log(e);
+      next(e);
+    }
+  },
+  getByName: async function (req, res, next) {
+    try {
+      const document = await titularesModel.find({ codigo: req.params.name });
+      res.json(document[0]);
+    } catch (e) {
       next(e);
     }
   },
   getAll: async function (req, res, next) {
-    try {
-      const document = await titularesModel.find();
-      console.log(document);
-      res.json(document);
-    } catch (e) {
-      next(e);
-    }
-  },
-  /* 
-  getByName: async function (req, res, next) {
-    try {
-      const customer = await customersModel.find({ name: req.params.name });
-      console.log(customer);
-      res.json(customer);
-    } catch (e) {
-      next(e);
-    }
-  },
-  create: async function (req, res, next) {
-    try {
-      const document = new customersModel({
-        code: req.body.code,
-        name: req.body.name,
-        address: req.body.address,
-        contact: req.body.contact,
-        notes: req.body.notes === " " ? "Sin observaciones" : req.body.notes,
-      });
+    const page = req.query.page;
+    const perPage = req.query.limit;
 
-      const response = await document.save();
+    try {
+      // busco la cantidad de documentos
+      const totalDocuments = await titularesModel.find().countDocuments();
 
-      res.json(response);
+      // busco los documentos, limitados
+      const documentsFound = await titularesModel
+        .find()
+        .limit(perPage)
+        .skip(parseInt(page) * perPage);
+
+      // divido el total de documentos por la cantidad que quiero traer por página
+      let ultimaPagina = Math.ceil(totalDocuments / perPage);
+
+      // devuelvo los documentos encontrados y la ultima pagina
+      res.json([documentsFound, ultimaPagina]);
     } catch (e) {
-      console.log(e);
       next(e);
     }
   },
-  delete: async function (req, res, next) {
+  modificar: async function (req, res, next) {
+    const updateData = Object.fromEntries(
+      Object.entries(req.body).filter(([_, v]) => v != "")
+    );
+
     try {
-      const deleted = await customersModel.deleteOne({ _id: req.params.id });
-      res.json(deleted);
-    } catch (e) {
-      next(e);
-    }
-  },
-  update: async function (req, res, next) {
-    try {
-      const doc = await customersModel.findOne({ _id: req.params.id });
-      const update = { [req.body[0].searchField]: req.body[0].update };
-      await doc.updateOne(update);
+      console.log(updateData);
+
+      const doc = await titularesModel.findOneAndUpdate(
+        { _id: req.query.titularId },
+        updateData,
+        {
+          new: true,
+        }
+      );
+
       res.json(doc);
     } catch (e) {
       console.log(e);
-    }
-  },
-  amount: async function (req, res, next) {
-    try {
-      const amount = await customersModel.find({}).sort({ code: -1 }).limit(1);
-
-      amount[0] ? res.json(amount[0].code) : res.json(0);
-    } catch (e) {
-      console.log(e);
-      next(e);
     }
   }, */
 };
