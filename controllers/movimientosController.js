@@ -436,7 +436,12 @@ module.exports = {
   },
   editMovement: async function (req, res, next) {
     const { cliente, planta, vehiculo, cajas, kgCong, importe } = req.body;
-    let fecha = new Date(req.body.fecha);
+
+    const fecha = new Date(req.body.fecha);
+    fecha.setHours(4);
+    fecha.setMinutes(0);
+    fecha.setMilliseconds(0);
+    fecha.setSeconds(0);
     try {
       const doc = await movimientosModel.findOne({ _id: req.params.id });
       const update = {
