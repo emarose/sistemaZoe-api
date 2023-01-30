@@ -40,6 +40,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/cuentasCorrientes", cuentasCorrientesRouter);
 app.use("/movimientos", movimientosRouter);
+
 app.use("/hojasRuta", hojasRutaRouter);
 app.use("/reportes", reportesRouter);
 
