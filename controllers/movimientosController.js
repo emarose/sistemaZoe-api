@@ -2,6 +2,9 @@ const movimientosModel = require("../models/movimientosModel");
 const cuentasCorrientesModel = require("../models/cuentasCorrientesModel");
 const formatDateString = require("../util/utils");
 
+const endOfDay = require("date-fns/endOfDay");
+const startOfDay = require("date-fns/startOfDay");
+
 module.exports = {
   create: async function (req, res, next) {
     const fecha = new Date(req.body.fecha);
@@ -33,7 +36,7 @@ module.exports = {
       next(e);
     }
   },
-  /* remake BE */
+  /* remake */
   nuevoMovimiento: async function (req, res, next) {
     const fecha = new Date(req.body.fecha);
     const {
@@ -230,8 +233,8 @@ module.exports = {
   byDate: async function (req, res, next) {
     const page = req.query.page || 0;
     const perPage = req.query.limit || 100;
-
     const fecha = new Date(req.body.fecha);
+
     fecha.setHours(4);
     fecha.setMinutes(0);
     fecha.setMilliseconds(0);
@@ -244,40 +247,15 @@ module.exports = {
 
       const documents = await movimientosModel
         .find({
-          fecha: fecha,
+          fecha: {
+            $gte: startOfDay(fecha),
+            $lte: endOfDay(fecha),
+          },
         })
         .limit(perPage)
         .skip(parseInt(page) * perPage);
       let ultimaPagina = Math.ceil(totalDocuments / perPage);
-      /*  const movimientos = await movimientosModel.find({
-        titular: req.params.cliente,
-      });
 
-      const cuentaCorriente = await cuentasCorrientesModel.find({
-        titular: req.params.cliente,
-      });
-
-       let sumaPagos = 0;
-      let sumaMovimientos = 0;
-      let sumaCongelado = 0;
-      let sumaFresco = 0;
-
-      movimientos.forEach((element) => {
-        switch (element.tipo) {
-          case "ENTRADA":
-            sumaPagos += element.importe;
-            break;
-          case "SALIDA":
-            sumaCongelado +=
-              cuentaCorriente[0].precioCongelado * element.kgCong;
-            sumaFresco += cuentaCorriente[0].precioFresco * element.cajas;
-            sumaMovimientos = sumaFresco + sumaCongelado;
-            break;
-        }
-      });
-
-      console.log("sumaPagos: ", sumaPagos);
-      console.log("sumaMovimientos: ", sumaMovimientos); */
       res.json([documents, ultimaPagina]);
     } catch (e) {
       next(e);
