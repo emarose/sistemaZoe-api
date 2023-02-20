@@ -1,24 +1,10 @@
 const hojasRutaModel = require("../models/hojasRutaModel");
-const movimientosModel = require("../models/movimientosModel");
-const { formatDateString } = require("../util/utils");
-const { formatNumberToCurrency } = require("../util/utils");
 
-var path = require("path");
-
-const pdf = require("pdf-creator-node");
-var fs = require("fs");
+const { startOfDay, endOfDay } = require("date-fns");
 
 module.exports = {
-  getAll: async function (req, res, next) {
-    try {
-      const document = await hojasRutaModel.find();
-
-      res.json(document);
-    } catch (e) {
-      next(e);
-    }
-  },
   create: async function (req, res, next) {
+    const { movimientos, importeTotal, cajasTotal, kgTotal } = req.body;
     const fecha = new Date(req.body.fecha);
 
     fecha.setHours(4);
@@ -28,22 +14,47 @@ module.exports = {
 
     try {
       const document = new hojasRutaModel({
-        movimientos: req.body.movimientos,
+        movimientos: movimientos,
         fecha: fecha,
-        importeTotal: req.body.importeTotal,
-        cajasTotal: req.body.cajasTotal,
-        kgTotal: req.body.kgTotal,
+        importeTotal: importeTotal,
+        cajasTotal: cajasTotal,
+        kgTotal: kgTotal,
       });
-
-      console.log(document);
 
       const response = await document.save();
 
       res.json(response);
     } catch (e) {
       console.log(e);
-      res.status(555);
-      res.send("hoja duplicada");
+      res.status(555).json("hoja duplicada");
+      next(e);
+    }
+  },
+  getAll: async function (req, res, next) {
+    const page = req.query.page || 0;
+    const perPage = req.query.limit || 50;
+    const skip = page * perPage;
+
+    try {
+      /* Query para encontrar todas las hojas de ruta */
+      const documents = await hojasRutaModel
+        .find({
+          isDeleted: false,
+        })
+        .limit(perPage)
+        .skip(skip);
+
+      /* Paginacion */
+      const totalDocuments = await hojasRutaModel
+        .find({ isDeleted: false })
+        .countDocuments();
+
+      let ultimaPagina = Math.ceil(totalDocuments / perPage);
+
+      res.json([documents, ultimaPagina]);
+    } catch (e) {
+      console.log(e);
+      next(e);
     }
   },
   getByDate: async function (req, res, next) {
@@ -54,18 +65,20 @@ module.exports = {
     date.setMilliseconds(0);
 
     try {
+      /* Query para encontrar hoja de ruta por fecha */
       const document = await hojasRutaModel.find({
         fecha: date,
+        isDeleted: false,
       });
 
       res.json(document[0]);
     } catch (e) {
+      console.log(e);
       next(e);
     }
   },
   betweenDates: async function (req, res, next) {
     const { initDate, endDate } = req.query;
-    console.log(req.query);
 
     const fechaInicio = new Date(initDate);
     fechaInicio.setHours(4);
@@ -73,7 +86,6 @@ module.exports = {
     fechaInicio.setMilliseconds(0);
     fechaInicio.setSeconds(0);
 
-    console.log(fechaInicio);
     const fechaFin = new Date(endDate);
     fechaFin.setHours(4);
     fechaFin.setMinutes(0);
@@ -81,29 +93,31 @@ module.exports = {
     fechaFin.setSeconds(0);
 
     try {
+      /* Query para encontrar hojas de ruta entre fechas */
       const documents = await hojasRutaModel.find({
         fecha: {
-          $gte: fechaInicio,
-          $lte: fechaFin,
+          $gte: startOfDay(fechaInicio),
+          $lte: endOfDay(fechaFin),
         },
+        isDeleted: false,
       });
 
-      console.log(documents);
       res.json(documents);
     } catch (e) {
+      console.log(e);
       next(e);
     }
   },
   modificar: async function (req, res, next) {
-    const { fecha, movimientos, importeTotal, cajasTotal, kgTotal } = req.body;
-    console.log(cajasTotal);
+    const { movimientos, importeTotal, cajasTotal, kgTotal } = req.body;
+
     try {
       const update = await hojasRutaModel.updateOne(
         { id: req.params.id },
         {
           $set: {
-            importeTotal: importeTotal,
             movimientos: movimientos,
+            importeTotal: importeTotal,
             cajasTotal: cajasTotal,
             kgTotal: kgTotal,
           },
@@ -111,7 +125,6 @@ module.exports = {
         { multi: true }
       );
 
-      console.log(update);
       res.json(update);
     } catch (e) {
       console.log(e);
@@ -124,11 +137,17 @@ module.exports = {
     fecha.setMinutes(0);
     fecha.setMilliseconds(0);
     fecha.setSeconds(0);
-    console.log(fecha);
+
     try {
-      const deleted = await hojasRutaModel.deleteOne({ fecha: fecha });
-      res.json(deleted);
+      /* Query para marcar el documento como eliminado (IsDeleted:true) */
+      const document = await movimientosModel.updateOne(
+        { fecha: fecha },
+        { $set: { isDeleted: true } }
+      );
+
+      res.json(document);
     } catch (e) {
+      console.log(e);
       next(e);
     }
   },

@@ -1,7 +1,7 @@
-var mongoose = require("mongoose");
+const mongoose = require("mongoose");
 const errorMessage = require("../util/errorMessage");
 
-const movimientosSchema = mongoose.Schema({
+const movimientosSchema = new mongoose.Schema({
   planta: {
     type: String,
     lowercase: true,
@@ -19,9 +19,11 @@ const movimientosSchema = mongoose.Schema({
   },
   cajas: {
     type: Number,
+    min: 0,
   },
   kgCong: {
     type: Number,
+    min: 0,
   },
   cliente: {
     type: String,
@@ -46,20 +48,13 @@ const movimientosSchema = mongoose.Schema({
   precioFresco: {
     type: Number,
   },
-  /* nuevo_balance: {
-    type: Number,
-  }, */
   precioCongelado: {
     type: Number,
-  } /*
-  saldo_actual: {
-    type: Number,
-    required: [true, errorMessage.GENERAL.campo_obligatorio],
   },
-  saldo_anterior: {
-    type: Number,
-    required: [true, errorMessage.GENERAL.campo_obligatorio],
-  }, */,
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 movimientosSchema.virtual("importe_currency").get(function () {
@@ -70,14 +65,6 @@ movimientosSchema.virtual("importe_currency").get(function () {
     "$1."
   )}`;
 });
-
-/* movimientosSchema.virtual("nuevo_balance_currency").get(function () {
-  let nuevo_balance = this.nuevo_balance.toFixed(2).replace(".", ",");
-  return `$ ${String(nuevo_balance).replace(
-    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
-    "$1."
-  )}`;
-}); */
 
 movimientosSchema.virtual("precioCongelado_currency").get(function () {
   if (this.precioCongelado === undefined) return;
@@ -96,12 +83,63 @@ movimientosSchema.virtual("precioFresco_currency").get(function () {
     "$1."
   )}`;
 });
-/* movimientosSchema.virtual("saldo_actual_currency").get(function () {
-  let saldo_actual = this.saldo_actual.toFixed(2).replace(".", ",");
-  return `$ ${String(saldo_actual).replace(
-    /(?<!\,.*)(\d)(?=(?:\d{3})+(?:\,|$))/g,
-    "$1."
-  )}`; */
+
+/* movimientosSchema.pre("save", function (next) {
+  const cliente = this.cliente;
+  const planta = this.planta;
+  const concepto = this.concepto;
+  const cajas = this.cajas;
+  const kgCong = this.kgCong;
+  const importe = this.importe;
+
+  const regex = /^[a-zA-Z0-9.]+$/;
+
+  if (
+    !regex.test(cliente) ||
+    !regex.test(planta) ||
+    !regex.test(concepto) ||
+    !regex.test(cajas) ||
+    !regex.test(kgCong) ||
+    !regex.test(importe)
+  ) {
+    const error = new Error(`Data contains invalid characters`);
+    next(error);
+  }
+
+  next();
+}); */
+
+// Validate the input before updating to the database
+/* movimientosSchema.pre("updateOne", function (next) {
+  const {
+    cliente,
+    planta,
+    concepto,
+    cajas,
+    kgCong,
+    importe,
+    precioFresco,
+    precioCongelado,
+  } = this._update;
+
+  const regex = /^[a-zA-Z0-9.]+$/;
+
+  if (
+    !regex.test(cliente) ||
+    !regex.test(planta) ||
+    !regex.test(concepto) ||
+    !regex.test(cajas) ||
+    !regex.test(kgCong) ||
+    !regex.test(importe) ||
+    !regex.test(precioFresco) ||
+    !regex.test(precioCongelado)
+  ) {
+    const error = new Error(`Data contains invalid characters`);
+    next(error);
+  }
+
+  next();
+}); */
 
 movimientosSchema.set("toJSON", { getters: true, virtuals: true });
 

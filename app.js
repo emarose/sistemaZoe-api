@@ -1,20 +1,20 @@
-var createError = require("http-errors");
-var express = require("express");
-var path = require("path");
-var cookieParser = require("cookie-parser");
-var bodyParser = require("body-parser");
-var logger = require("morgan");
+const express = require("express");
+const createError = require("http-errors");
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const bodyParser = require("body-parser");
+const logger = require("morgan");
+const cors = require("cors");
+
 require("dotenv").config();
 
-var movimientosRouter = require("./routes/movimientosRoute");
-var hojasRutaRouter = require("./routes/hojasRutaRoute");
-var cuentasCorrientesRouter = require("./routes/cuentasCorrientesRoute");
-var reportesRouter = require("./routes/reportesRoute");
+const movimientosRouter = require("./routes/movimientosRoute");
+const hojasRutaRouter = require("./routes/hojasRutaRoute");
+const cuentasCorrientesRouter = require("./routes/cuentasCorrientesRoute");
+const reportesRouter = require("./routes/reportesRoute");
+const loginRouter = require("./routes/loginRoute");
 
-var titularesRouter = require("./routes/titularesRoute");
-
-var app = express();
-var cors = require("cors");
+const app = express();
 
 app.use(bodyParser.json());
 app.use(cors({ origin: "*" }));
@@ -42,6 +42,7 @@ app.use("/cuentasCorrientes", cuentasCorrientesRouter);
 app.use("/movimientos", movimientosRouter);
 app.use("/hojasRuta", hojasRutaRouter);
 app.use("/reportes", reportesRouter);
+app.use("/login", loginRouter);
 
 app.use(function (req, res, next) {
   next(createError(404));
@@ -53,7 +54,6 @@ app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   res.json({ error: true, message: err.message });
 });
-
 app.listen(process.env.PORT || 3000, () => {
   console.log("Express conectado al puerto", process.env.PORT || 3000);
 });
