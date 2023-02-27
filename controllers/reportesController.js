@@ -273,10 +273,6 @@ module.exports = {
     const initDate = req.body.data;
 
     const fecha = new Date(initDate);
-    fecha.setHours(4);
-    fecha.setMinutes(0);
-    fecha.setMilliseconds(0);
-    fecha.setSeconds(0);
 
     try {
       const hojaDeRuta = await hojasRutaModel.findOne({
@@ -285,6 +281,8 @@ module.exports = {
           $lte: endOfDay(fecha),
         },
       });
+
+      console.log(hojaDeRuta);
 
       const movimientos = await movimientosModel
         .find({
