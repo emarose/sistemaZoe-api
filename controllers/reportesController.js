@@ -270,7 +270,7 @@ module.exports = {
     }
   },
   resumenHoja: async function (req, res, next) {
-    const initDate = req.body.data;
+    const initDate = req.body.fecha;
 
     const fecha = new Date(initDate);
 
@@ -282,7 +282,7 @@ module.exports = {
         },
       });
 
-      console.log(hojaDeRuta);
+      console.log(hojaDeRuta.movimientos);
 
       const movimientos = await movimientosModel
         .find({
