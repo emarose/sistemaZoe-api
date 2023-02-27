@@ -282,7 +282,7 @@ module.exports = {
         },
       });
 
-      console.log(hojaDeRuta.movimientos);
+      console.log(hojaDeRuta);
 
       const movimientos = await movimientosModel
         .find({
@@ -440,7 +440,7 @@ module.exports = {
         size: "A4",
       });
 
-      doc.pipe(fs.createWriteStream("Exported/resumenHoja.pdf"));
+      //doc.pipe(fs.createWriteStream("Exported/resumenHoja.pdf"));
       res.setHeader("Content-type", "application/pdf");
       doc.pipe(res);
 
