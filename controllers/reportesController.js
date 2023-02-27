@@ -146,7 +146,7 @@ module.exports = {
           size: "A4",
         });
 
-        doc.pipe(fs.createWriteStream("Exported/resumenCuentaCorriente.pdf"));
+        //doc.pipe(fs.createWriteStream("Exported/resumenCuentaCorriente.pdf"));
         res.setHeader("Content-type", "application/pdf");
         doc.pipe(res);
 
@@ -271,7 +271,6 @@ module.exports = {
   },
   resumenHoja: async function (req, res, next) {
     const initDate = req.body.fecha;
-
     const fecha = new Date(initDate);
 
     try {
